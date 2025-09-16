@@ -150,7 +150,7 @@ const RegistrationDetail: React.FC<{ registration: Registration; onBack: () => v
           <button onClick={onBack} className="px-4 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 text-sm transition-transform duration-150 active:scale-95">Back</button>
       </div>
 
-      <div className="bg-white p-8 rounded-xl shadow-lg print:shadow-none border border-cream-200">
+      <div className="bg-white p-4 sm:p-8 rounded-none sm:rounded-xl shadow-lg print:shadow-none border border-cream-200">
         <ReportHeader regId={registration.id} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
