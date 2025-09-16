@@ -43,21 +43,21 @@ const GeneralChatbot: React.FC = () => {
     <>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 bg-accent-500 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center hover:bg-accent-600 transition-transform hover:scale-110 active:scale-100 z-50"
+        className="fixed bottom-6 right-6 bg-secondary-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center hover:bg-secondary-700 transition-transform hover:scale-110 active:scale-100 z-50"
         aria-label="Open AI Assistant"
       >
         <Icon name={isOpen ? 'close' : 'help-circle'} className="w-8 h-8"/>
       </button>
 
       <div className={`fixed bottom-24 right-6 w-full max-w-sm bg-cream-50 rounded-2xl shadow-2xl border border-cream-200 transition-all duration-300 ease-in-out z-40 origin-bottom-right ${isOpen ? 'transform scale-100 opacity-100' : 'transform scale-95 opacity-0 pointer-events-none'}`}>
-        <div className="p-4 border-b border-cream-200 bg-white text-primary-900 rounded-t-2xl flex justify-between items-center">
-          <h3 className="font-bold text-lg flex items-center gap-2"><Icon name="ai-sparkles" className="w-6 h-6 text-accent-500"/> AI Assistant: पशुHelper</h3>
-          <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600"><Icon name="close" className="w-5 h-5"/></button>
+        <div className="p-4 border-b border-secondary-300 bg-secondary-700 text-white rounded-t-2xl flex justify-between items-center">
+          <h3 className="font-bold text-lg flex items-center gap-2"><Icon name="ai-sparkles" className="w-6 h-6 text-white"/> AI Assistant: पशुHelper</h3>
+          <button onClick={() => setIsOpen(false)} className="text-gray-300 hover:text-white"><Icon name="close" className="w-5 h-5"/></button>
         </div>
         <div className="flex-grow p-4 h-96 overflow-y-auto space-y-4 bg-cream-100">
           {messages.map((msg, index) => (
             <div key={index} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-               {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-primary-800 flex items-center justify-center text-white text-lg flex-shrink-0">🐮</div>}
+               {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-secondary-800 flex items-center justify-center text-white text-lg flex-shrink-0">🐮</div>}
               <div className={`p-3 rounded-2xl max-w-xs text-sm shadow-sm ${msg.role === 'user' ? 'bg-accent-500 text-white rounded-br-none' : 'bg-white text-primary-900 rounded-bl-none'}`}>
                 {msg.parts[0].text.split('\n').map((line, i) => <p key={i}>{line}</p>)}
               </div>
@@ -65,7 +65,7 @@ const GeneralChatbot: React.FC = () => {
           ))}
           {isLoading && (
             <div className="flex items-end gap-2 justify-start">
-               <div className="w-8 h-8 rounded-full bg-primary-800 flex items-center justify-center text-white text-lg flex-shrink-0">🐮</div>
+               <div className="w-8 h-8 rounded-full bg-secondary-800 flex items-center justify-center text-white text-lg flex-shrink-0">🐮</div>
               <div className="p-3 rounded-2xl bg-white text-gray-500 text-sm rounded-bl-none shadow-sm">Thinking...</div>
             </div>
           )}
@@ -78,10 +78,10 @@ const GeneralChatbot: React.FC = () => {
             onChange={(e) => setUserInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Ask about breeds..."
-            className="flex-grow p-2 border border-gray-300 rounded-l-md focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900"
+            className="flex-grow p-2 border border-gray-300 rounded-l-md focus:ring-secondary-500 focus:border-secondary-500 bg-white text-gray-900"
             disabled={isLoading}
           />
-          <button onClick={handleSendMessage} disabled={isLoading} className="px-4 bg-accent-500 text-white rounded-r-md hover:bg-accent-600 disabled:bg-gray-400 flex items-center justify-center transition-transform active:scale-95">
+          <button onClick={handleSendMessage} disabled={isLoading} className="px-4 bg-secondary-600 text-white rounded-r-md hover:bg-secondary-700 disabled:bg-gray-400 flex items-center justify-center transition-transform active:scale-95">
             <Icon name="send" className="w-5 h-5" />
           </button>
         </div>
@@ -122,7 +122,7 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
             <div ref={modalRef} tabIndex={-1} className="bg-cream-50 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-cream-200 flex justify-between items-center">
                     <h2 className="text-xl font-bold text-primary-900 flex items-center gap-2">
-                        <Icon name="book-open" className="w-6 h-6 text-accent-600"/> Breed Learning Hub
+                        <Icon name="book-open" className="w-6 h-6 text-accent-yellow-600"/> Breed Learning Hub
                     </h2>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-cream-200">
                         <Icon name="close" className="w-6 h-6 text-gray-500"/>
@@ -136,7 +136,7 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
                             placeholder={`Search ${ALL_BREEDS.length} recognized breeds...`}
                             value={searchTerm}
                             onChange={e => { setSearchTerm(e.target.value); setSelectedBreed(null); }}
-                            className="w-full p-2 pl-10 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-accent-500 focus:border-accent-500"
+                            className="w-full p-2 pl-10 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-accent-yellow-500 focus:border-accent-yellow-500"
                         />
                     </div>
                 </div>
@@ -145,9 +145,9 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
                        <ul className="divide-y divide-cream-200">
                            {filteredBreeds.length > 0 ? filteredBreeds.map(breed => (
                                <li key={breed.name}>
-                                   <button onClick={() => setSelectedBreed(breed)} className={`w-full text-left p-3 hover:bg-cream-100 ${selectedBreed?.name === breed.name ? 'bg-accent-100' : ''}`}>
+                                   <button onClick={() => setSelectedBreed(breed)} className={`w-full text-left p-3 hover:bg-cream-100 ${selectedBreed?.name === breed.name ? 'bg-accent-yellow-100' : ''}`}>
                                         <p className="font-semibold text-primary-800">{breed.name}</p>
-                                        <p className="text-sm text-secondary-700">{breed.species}</p>
+                                        <p className="text-sm text-primary-700">{breed.species}</p>
                                    </button>
                                </li>
                            )) : (
@@ -159,8 +159,8 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
                         {selectedBreed ? (
                             <div>
                                 <h3 className="text-lg font-bold text-primary-900">{selectedBreed.name}</h3>
-                                <p className="text-sm font-semibold text-accent-600 mb-2">{selectedBreed.species}</p>
-                                <p className="text-secondary-800 whitespace-pre-wrap">{selectedBreed.facts}</p>
+                                <p className="text-sm font-semibold text-accent-yellow-600 mb-2">{selectedBreed.species}</p>
+                                <p className="text-primary-800 whitespace-pre-wrap">{selectedBreed.facts}</p>
                             </div>
                         ) : (
                              <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
@@ -182,29 +182,43 @@ const StatCard: React.FC<{title: string, value: string | number, icon: React.Rea
             {icon}
         </div>
         <div>
-            <p className="text-sm font-medium text-secondary-700">{title}</p>
+            <p className="text-sm font-medium text-primary-700">{title}</p>
             <p className="text-2xl font-bold text-primary-900">{value}</p>
         </div>
     </div>
 );
 
-const QuickActionCard: React.FC<{ title: string; description: string; icon: 'ai-sparkles' | 'history' | 'chart' | 'pencil-square'; onClick: () => void; }> = ({ title, description, icon, onClick }) => (
-    <button
-      onClick={onClick}
-      className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg border border-cream-200 transition-all duration-300 ease-out hover:-translate-y-1 text-left w-full flex flex-col group"
-    >
-      <div className="flex-grow">
-        <div className="p-3 bg-accent-100 rounded-lg mr-4 w-12 h-12 mb-4">
-            <Icon name={icon} className="w-6 h-6 text-accent-600" />
-        </div>
-        <h2 className="text-lg font-bold text-primary-900">{title}</h2>
-        <p className="text-secondary-700 text-sm mt-1">{description}</p>
-      </div>
-       <div className="mt-4 text-accent-600 font-bold flex items-center text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-        Go <Icon name="chevron-right" className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
-      </div>
-    </button>
-);
+const QuickActionCard: React.FC<{ title: string; description: string; iconName: 'ai-sparkles' | 'history' | 'chart' | 'pencil-square'; onClick: () => void; accent: 'green' | 'teal' | 'yellow' | 'green-dark' }> = ({ title, description, iconName, onClick, accent }) => {
+    const accents = {
+        green: 'bg-accent-100 text-accent-700',
+        teal: 'bg-secondary-100 text-secondary-700',
+        yellow: 'bg-accent-yellow-100 text-accent-yellow-700',
+        'green-dark': 'bg-primary-100 text-primary-700',
+    };
+    const accentColors = {
+        green: 'text-accent-600',
+        teal: 'text-secondary-600',
+        yellow: 'text-accent-yellow-600',
+        'green-dark': 'text-primary-600',
+    };
+    return (
+        <button
+          onClick={onClick}
+          className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg border border-cream-200 transition-all duration-300 ease-out hover:-translate-y-1 text-left w-full flex flex-col group"
+        >
+          <div className="flex-grow">
+            <div className={`p-3 rounded-lg mr-4 w-12 h-12 mb-4 ${accents[accent]}`}>
+                <Icon name={iconName} className="w-6 h-6" />
+            </div>
+            <h2 className="text-lg font-bold text-primary-900">{title}</h2>
+            <p className="text-primary-700 text-sm mt-1">{description}</p>
+          </div>
+           <div className={`mt-4 ${accentColors[accent]} font-bold flex items-center text-sm opacity-0 group-hover:opacity-100 transition-opacity`}>
+            Go <Icon name="chevron-right" className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
+          </div>
+        </button>
+    );
+};
 
 const RegistrationCarouselItem: React.FC<{registration: Registration, onClick: () => void}> = ({registration, onClick}) => {
     const firstAnimal = registration.animals[0];
@@ -218,7 +232,7 @@ const RegistrationCarouselItem: React.FC<{registration: Registration, onClick: (
                  <img src={firstAnimal?.photos[0]?.previewUrl} alt="Animal" className="w-full h-full object-cover"/>
             </div>
             <p className="font-bold text-primary-900 truncate">{firstAnimal?.aiResult?.breedName || 'Unknown Breed'}</p>
-            <p className="text-sm text-secondary-700 truncate">{registration.owner.name}</p>
+            <p className="text-sm text-primary-700 truncate">{registration.owner.name}</p>
             <div className="flex justify-between items-center mt-2">
                 <p className="text-xs text-gray-500">{new Date(registration.timestamp).toLocaleDateString()}</p>
                 <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColor}`}>{status}</span>
@@ -264,7 +278,7 @@ export const Dashboard: React.FC<{
       {/* Welcome Header */}
       <div>
         <h1 className="text-3xl font-bold text-primary-900">Welcome to पशुVision</h1>
-        <p className="text-secondary-700 mt-1">Your AI-powered assistant for accurate livestock management.</p>
+        <p className="text-primary-700 mt-1">Your AI-powered assistant for accurate livestock management.</p>
       </div>
 
       {/* At-a-glance Stats */}
@@ -276,10 +290,10 @@ export const Dashboard: React.FC<{
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <QuickActionCard title="New Registration" description="Start a new entry." icon="ai-sparkles" onClick={() => onNavigate('REGISTRATION')} />
-        <QuickActionCard title="Registration History" description="Review past reports." icon="history" onClick={() => onNavigate('HISTORY')} />
-        <QuickActionCard title="Analytics" description="View breed trends." icon="chart" onClick={() => onNavigate('ANALYTICS')} />
-        <QuickActionCard title="Update Record" description="Find & edit a registration." icon="pencil-square" onClick={() => setIsUpdateModalOpen(true)} />
+        <QuickActionCard title="New Registration" description="Start a new entry." iconName="ai-sparkles" accent="green" onClick={() => onNavigate('REGISTRATION')} />
+        <QuickActionCard title="Registration History" description="Review past reports." iconName="history" accent="green-dark" onClick={() => onNavigate('HISTORY')} />
+        <QuickActionCard title="Analytics" description="View breed trends." iconName="chart" accent="teal" onClick={() => onNavigate('ANALYTICS')} />
+        <QuickActionCard title="Update Record" description="Find & edit a registration." iconName="pencil-square" accent="yellow" onClick={() => setIsUpdateModalOpen(true)} />
       </div>
       
       {/* Recent Registrations Carousel */}
@@ -296,7 +310,7 @@ export const Dashboard: React.FC<{
             </div>
          ) : (
             <div className="text-center py-10 bg-white rounded-xl border-2 border-dashed border-cream-200">
-                <p className="text-secondary-700">No registrations yet — Start one to see it appear here! 🐮</p>
+                <p className="text-primary-700">No registrations yet — Start one to see it appear here! 🐮</p>
             </div>
          )}
       </div>
@@ -304,20 +318,20 @@ export const Dashboard: React.FC<{
       {/* What's New & Learning Hub */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-cream-200">
-            <h3 className="font-bold text-primary-900 mb-4 flex items-center gap-2"><Icon name="megaphone" className="w-5 h-5 text-accent-600"/>Announcements</h3>
+            <h3 className="font-bold text-primary-900 mb-4 flex items-center gap-2"><Icon name="megaphone" className="w-5 h-5 text-accent-yellow-600"/>Announcements</h3>
             <div className="space-y-3">
               {ANNOUNCEMENTS.map(ann => (
                   <div key={ann.id}>
                     <h4 className="font-semibold text-primary-800">{ann.title}</h4>
-                    <p className="text-sm text-secondary-700">{ann.content} <a href="#" className="text-accent-600 font-semibold hover:underline">{ann.linkText}</a></p>
+                    <p className="text-sm text-primary-700">{ann.content} <a href="#" className="text-accent-yellow-600 font-semibold hover:underline">{ann.linkText}</a></p>
                   </div>
               ))}
             </div>
           </div>
           <button onClick={() => setIsLearningHubOpen(true)} className="bg-white p-6 rounded-xl shadow-sm border border-cream-200 text-left hover:shadow-lg transition-shadow hover:-translate-y-1">
-            <h3 className="font-bold text-primary-900 mb-2 flex items-center gap-2"><Icon name="book-open" className="w-5 h-5 text-accent-600"/>Breed Learning Hub</h3>
-            <p className="text-sm text-secondary-700">Explore facts and information about all 74 officially recognized breeds of cattle and buffalo in India. Use the search to quickly find a specific breed.</p>
-             <div className="mt-4 text-accent-600 font-bold flex items-center text-sm">
+            <h3 className="font-bold text-primary-900 mb-2 flex items-center gap-2"><Icon name="book-open" className="w-5 h-5 text-accent-yellow-600"/>Breed Learning Hub</h3>
+            <p className="text-sm text-primary-700">Explore facts and information about all 74 officially recognized breeds of cattle and buffalo in India. Use the search to quickly find a specific breed.</p>
+             <div className="mt-4 text-accent-yellow-600 font-bold flex items-center text-sm">
                 Open Hub <Icon name="chevron-right" className="w-4 h-4 ml-1" />
             </div>
           </button>

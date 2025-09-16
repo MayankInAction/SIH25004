@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { AnimalResult, OwnerData, Confidence, ChatMessage } from '../types';
+import { AnimalResult, OwnerData, Confidence, ChatMessage, Registration } from '../types';
 import { Icon } from './icons';
 import { startChat, sendMessageToChat } from '../services/geminiService';
 
@@ -8,6 +7,8 @@ interface ResultsPageProps {
   results: AnimalResult[];
   owner: OwnerData;
   onFinish: () => void;
+  registration: Registration | null;
+  onViewReport: (registration: Registration) => void;
 }
 
 const ConfidenceBadge: React.FC<{ level: Confidence }> = ({ level }) => {
@@ -28,7 +29,7 @@ const ExplorePromptButton: React.FC<{ iconName: 'syringe' | 'building-library' |
         <div className="p-2 bg-secondary-100 rounded-md">
             <Icon name={iconName} className="w-5 h-5 text-secondary-700" />
         </div>
-        <span className="flex-grow font-semibold text-secondary-800 text-sm">{text}</span>
+        <span className="flex-grow font-semibold text-primary-800 text-sm">{text}</span>
         <Icon name="chevron-right" className="w-5 h-5 text-gray-400 transition-transform group-hover:translate-x-1" />
     </button>
 );
@@ -45,7 +46,7 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
       setActiveChat([{ role: 'model', parts: [{ text: `Hello! I can answer questions about the ${animal.aiResult.breedName} breed. How can I help?` }] }]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [animal.aiResult.breedName, animal.aiResult.error]);
+  }, [animal.aiResult.breedName, animal.aiResult.error, animal.id]); // Added animal.id to re-trigger effect on tab change
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -113,7 +114,7 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
               </div>
 
               <div className="pt-6 mt-6 border-t border-cream-200">
-                <h4 className="font-semibold text-secondary-800 mb-3">Explore Further with AI:</h4>
+                <h4 className="font-semibold text-primary-800 mb-3">Explore Further with AI:</h4>
                 <div className="space-y-2">
                   <ExplorePromptButton
                       iconName="syringe"
@@ -140,14 +141,14 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
         </div>
         
         {!animal.aiResult.error && (
-          <div className="flex flex-col bg-cream-50 rounded-lg border border-cream-200 min-h-[400px]">
-            <div className="p-3 border-b border-cream-200">
-              <h4 className="font-bold text-primary-900 flex items-center gap-2"><Icon name="chat-bubble" className="w-5 h-5"/>Ask about {animal.aiResult.breedName}</h4>
+          <div className="flex flex-col bg-cream-50 rounded-lg border border-secondary-200 min-h-[400px]">
+            <div className="p-3 border-b border-secondary-200 bg-secondary-100 rounded-t-lg">
+              <h4 className="font-bold text-secondary-900 flex items-center gap-2"><Icon name="chat-bubble" className="w-5 h-5"/>Ask about {animal.aiResult.breedName}</h4>
             </div>
             <div className="flex-grow p-4 space-y-4 h-64 overflow-y-auto">
               {activeChat.map((msg, index) => (
                 <div key={index} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-primary-800 flex items-center justify-center text-white text-lg flex-shrink-0">🐮</div>}
+                  {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-secondary-800 flex items-center justify-center text-white text-lg flex-shrink-0">🐮</div>}
                   <div className={`p-3 rounded-2xl max-w-xs text-sm shadow-sm ${msg.role === 'user' ? 'bg-accent-500 text-white rounded-br-none' : 'bg-white text-primary-900 rounded-bl-none'}`}>
                      {msg.parts[0].text}
                   </div>
@@ -155,23 +156,23 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
               ))}
               {isLoading && (
                  <div className="flex items-end gap-2 justify-start">
-                   <div className="w-8 h-8 rounded-full bg-primary-800 flex items-center justify-center text-white text-lg flex-shrink-0">🐮</div>
+                   <div className="w-8 h-8 rounded-full bg-secondary-800 flex items-center justify-center text-white text-lg flex-shrink-0">🐮</div>
                    <div className="p-3 rounded-2xl bg-white text-gray-500 text-sm rounded-bl-none shadow-sm">Thinking...</div>
                  </div>
               )}
               <div ref={messagesEndRef} />
             </div>
-            <div className="p-3 border-t border-cream-200 flex">
+            <div className="p-3 border-t border-secondary-200 flex bg-secondary-50">
               <input
                 type="text"
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(userInput)}
                 placeholder="Ask a question..."
-                className="flex-grow p-2 border border-gray-300 rounded-l-md focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900"
+                className="flex-grow p-2 border border-gray-300 rounded-l-md focus:ring-secondary-500 focus:border-secondary-500 bg-white text-gray-900"
                 disabled={isLoading}
               />
-              <button onClick={() => handleSendMessage(userInput)} disabled={isLoading} className="p-2 bg-accent-500 text-white rounded-r-md hover:bg-accent-600 disabled:bg-gray-400 transition-transform duration-150 active:scale-95">
+              <button onClick={() => handleSendMessage(userInput)} disabled={isLoading} className="p-2 bg-secondary-600 text-white rounded-r-md hover:bg-secondary-700 disabled:bg-gray-400 transition-transform duration-150 active:scale-95">
                 <Icon name="send" className="w-5 h-5" />
               </button>
             </div>
@@ -183,8 +184,10 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
 };
 
 
-export const ResultsPage: React.FC<ResultsPageProps> = ({ results, owner, onFinish }) => {
+export const ResultsPage: React.FC<ResultsPageProps> = ({ results, owner, onFinish, registration, onViewReport }) => {
   const [isMounted, setIsMounted] = useState(false);
+  const [activeAnimalIndex, setActiveAnimalIndex] = useState(0);
+  
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 100);
     return () => clearTimeout(timer);
@@ -194,25 +197,57 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ results, owner, onFini
     <div className="space-y-8">
       <div className="text-center bg-white p-8 rounded-xl border border-cream-200">
         <div className={`transition-all duration-500 ease-out transform ${isMounted ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}>
-            <Icon name="check" className="w-16 h-16 mx-auto text-primary-600 bg-primary-100 rounded-full p-3" />
+            <Icon name="check" className="w-16 h-16 mx-auto text-accent-600 bg-accent-100 rounded-full p-3" />
         </div>
         <h1 className="text-3xl font-bold mt-4 text-primary-900">AI Analysis Complete</h1>
-        <p className="text-secondary-700 mt-2">Registration for owner <span className="font-semibold text-primary-900">{owner.name}</span> has been successfully created.</p>
+        <p className="text-primary-700 mt-2">Registration for owner <span className="font-semibold text-primary-900">{owner.name}</span> has been successfully created.</p>
       </div>
 
-      {results.map((animal, index) => (
-        <div 
-          key={animal.id} 
-          className={`transition-all duration-500 ease-out transform ${isMounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-          style={{ transitionDelay: `${150 + index * 150}ms` }}
-        >
-          <AnimalResultCardWithChat animal={animal} index={index} />
+      {/* Tabs for multiple animals */}
+      {results.length > 1 && (
+        <div className="border-b border-cream-200">
+          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            {results.map((animal, index) => (
+              <button
+                key={animal.id}
+                onClick={() => setActiveAnimalIndex(index)}
+                className={`
+                  ${index === activeAnimalIndex
+                    ? 'border-accent-500 text-accent-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+                  whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-all
+                `}
+              >
+                Animal #{index + 1} - {animal.aiResult.error ? 'Analysis Failed' : animal.aiResult.breedName}
+              </button>
+            ))}
+          </nav>
         </div>
-      ))}
+      )}
 
-      <div className="text-center mt-10">
-        <button onClick={onFinish} className="px-10 py-3 bg-accent-500 text-white font-semibold rounded-lg shadow-md hover:bg-accent-600 transition-transform duration-150 active:scale-95">
-          Finish & Return to Dashboard
+      {results.length > 0 && (
+         <div 
+            key={results[activeAnimalIndex].id} // Add key to force re-mount of child component on tab change
+            className={`transition-all duration-500 ease-out transform ${isMounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+          >
+            <AnimalResultCardWithChat animal={results[activeAnimalIndex]} index={activeAnimalIndex} />
+          </div>
+      )}
+
+
+      <div className="text-center mt-10 flex justify-center items-center gap-4">
+        <button 
+          onClick={onFinish} 
+          className="px-8 py-3 border border-gray-300 text-primary-700 font-semibold rounded-lg hover:bg-gray-50 transition-transform duration-150 active:scale-95"
+        >
+          Back to Dashboard
+        </button>
+        <button 
+          onClick={() => registration && onViewReport(registration)} 
+          disabled={!registration}
+          className="px-8 py-3 bg-accent-500 text-white font-semibold rounded-lg shadow-md hover:bg-accent-600 transition-transform duration-150 active:scale-95 disabled:bg-accent-300"
+        >
+          View Official Report
         </button>
       </div>
     </div>
@@ -221,7 +256,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ results, owner, onFini
 
 const ResultDetail: React.FC<{label: string, content: string}> = ({label, content}) => (
     <div>
-        <h4 className="font-semibold text-secondary-800">{label}</h4>
+        <h4 className="font-semibold text-primary-800">{label}</h4>
         <p className="text-primary-900">{content}</p>
     </div>
 );

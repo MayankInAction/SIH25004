@@ -6,11 +6,11 @@ import { Icon } from './icons';
 
 const StatCard: React.FC<{title: string, value: string | number, icon: React.ReactElement}> = ({title, value, icon}) => (
     <div className="bg-white p-4 rounded-lg shadow-sm border border-cream-200 flex items-center">
-        <div className="p-3 rounded-full bg-primary-100 text-primary-700 mr-4">
+        <div className="p-3 rounded-full bg-secondary-100 text-secondary-700 mr-4">
             {icon}
         </div>
         <div>
-            <p className="text-sm font-medium text-secondary-700">{title}</p>
+            <p className="text-sm font-medium text-primary-700">{title}</p>
             <p className="text-2xl font-bold text-primary-900">{value}</p>
         </div>
     </div>
@@ -57,7 +57,7 @@ export const AnalyticsPage: React.FC<{onBack: () => void}> = ({ onBack }) => {
   const totalAnimals = useMemo(() => registrations.reduce((sum, reg) => sum + reg.animals.length, 0), [registrations]);
   const mostCommonBreed = useMemo(() => breedData[0]?.name || 'N/A', [breedData]);
   
-  const COLORS = ['#14532d', '#166534', '#15803d', '#16a34a', '#22c55e', '#4ade80'];
+  const COLORS = ['#0f766e', '#115e59', '#134e4a', '#0d9488', '#14b8a6', '#2dd4bf'];
   
   if (registrations.length === 0) {
     return (
@@ -74,7 +74,7 @@ export const AnalyticsPage: React.FC<{onBack: () => void}> = ({ onBack }) => {
     <div className="space-y-8">
         <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-primary-900">Analytics Dashboard</h1>
-            <button onClick={onBack} className="px-4 py-2 border border-gray-300 rounded-md text-secondary-700 font-semibold hover:bg-gray-50 text-sm transition-transform duration-150 active:scale-95">Back to Dashboard</button>
+            <button onClick={onBack} className="px-4 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 text-sm transition-transform duration-150 active:scale-95">Back to Dashboard</button>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -91,9 +91,9 @@ export const AnalyticsPage: React.FC<{onBack: () => void}> = ({ onBack }) => {
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
               <XAxis dataKey="name" angle={-35} textAnchor="end" height={90} interval={0} tick={{fontSize: 12}} />
               <YAxis allowDecimals={false} />
-              <Tooltip cursor={{fill: 'rgba(20, 83, 45, 0.05)'}}/>
+              <Tooltip cursor={{fill: 'rgba(13, 148, 136, 0.05)'}}/>
               <Legend />
-              <Bar dataKey="count" fill="#15803d" name="Number of Animals" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" fill="#0d9488" name="Number of Animals" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

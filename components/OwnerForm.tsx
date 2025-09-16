@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { OwnerData } from '../types';
-import { SAMPLE_OWNER_DATA } from '../constants';
+import { INDIAN_STATES } from '../constants';
+import { INDIAN_STATES_AND_DISTRICTS } from '../utils/locationData';
 
 interface OwnerFormProps {
   initialData: OwnerData;
@@ -19,23 +20,35 @@ const Spinner: React.FC = () => (
 
 export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onBack, isSubmitting, isUpdateMode }) => {
   const [formData, setFormData] = useState<OwnerData>(initialData);
+  const [districts, setDistricts] = useState<string[]>([]);
 
   useEffect(() => {
     setFormData(initialData);
   }, [initialData]);
 
+  useEffect(() => {
+    if (formData.state && INDIAN_STATES_AND_DISTRICTS[formData.state]) {
+        setDistricts(INDIAN_STATES_AND_DISTRICTS[formData.state]);
+    } else {
+        setDistricts([]);
+    }
+  }, [formData.state]);
+
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'state') {
+        // When state changes, reset district
+        setFormData({ ...formData, state: value, district: '' });
+    } else {
+        setFormData({ ...formData, [name]: value });
+    }
   };
   
-  const handleFillSampleData = () => {
-    setFormData(SAMPLE_OWNER_DATA);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     for (const key in formData) {
-        if (formData[key as keyof OwnerData].trim() === '') {
+        if (formData[key as keyof OwnerData].toString().trim() === '') {
             alert(`Please fill in the '${key}' field.`);
             return;
         }
@@ -48,11 +61,8 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
        <div className="flex justify-between items-start">
         <div>
             <h3 className="text-xl font-bold text-primary-900">{isUpdateMode ? 'Update Owner & Location Information' : 'Owner & Location Information'}</h3>
-            <p className="text-sm text-secondary-700">All fields are required for BPA integration.</p>
+            <p className="text-sm text-primary-700">All fields are required for BPA integration.</p>
         </div>
-        <button type="button" onClick={handleFillSampleData} className="text-sm bg-secondary-100 text-secondary-800 font-semibold px-3 py-1 rounded-md hover:bg-secondary-200 transition-transform duration-150 active:scale-95" disabled={isSubmitting}>
-            Fill with Sample Data
-        </button>
        </div>
       
       <div>
@@ -63,7 +73,7 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
             <InputField label="Aadhaar Number" name="aadhaar" type="text" value={formData.aadhaar} onChange={handleChange} maxLength={12} />
             <InputField label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} />
             <div>
-              <label className="block text-sm font-medium text-secondary-800">Gender</label>
+              <label className="block text-sm font-medium text-primary-800">Gender</label>
               <select name="gender" value={formData.gender} onChange={handleChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900">
                 <option value="Female">Female</option>
                 <option value="Male">Male</option>
@@ -77,14 +87,45 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InputField label="Full Address" name="address" value={formData.address} onChange={handleChange} />
             <InputField label="Village / Town" name="village" value={formData.village} onChange={handleChange} />
-            <InputField label="District" name="district" value={formData.district} onChange={handleChange} />
-            <InputField label="State" name="state" value={formData.state} onChange={handleChange} />
+            <div>
+              <label htmlFor="state" className="block text-sm font-medium text-primary-800">State</label>
+              <select
+                id="state"
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900"
+                required
+              >
+                <option value="" disabled>Select a state</option>
+                {INDIAN_STATES.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="district" className="block text-sm font-medium text-primary-800">District</label>
+              <select
+                id="district"
+                name="district"
+                value={formData.district}
+                onChange={handleChange}
+                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900 disabled:bg-gray-100"
+                required
+                disabled={!formData.state || districts.length === 0}
+              >
+                <option value="" disabled>Select a district</option>
+                {districts.map(district => (
+                  <option key={district} value={district}>{district}</option>
+                ))}
+              </select>
+            </div>
         </div>
       </div>
 
 
       <div className="flex justify-between mt-8 pt-6 border-t border-cream-200">
-        <button type="button" onClick={onBack} className="px-6 py-2 border border-gray-300 rounded-md text-secondary-700 font-semibold hover:bg-gray-50 disabled:opacity-50 transition-transform duration-150 active:scale-95" disabled={isSubmitting}>Back</button>
+        <button type="button" onClick={onBack} className="px-6 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 disabled:opacity-50 transition-transform duration-150 active:scale-95" disabled={isSubmitting}>Back</button>
         <button 
             type="submit" 
             className="px-8 py-2 bg-accent-500 text-white font-semibold rounded-md hover:bg-accent-600 shadow-sm flex items-center justify-center w-56 disabled:bg-accent-400 disabled:cursor-not-allowed transition-transform duration-150 active:scale-95"
@@ -106,7 +147,7 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
 
 interface InputFieldProps {
   label: string;
-  name: keyof OwnerData;
+  name: keyof Omit<OwnerData, 'state' | 'district'>;
   type?: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -115,7 +156,7 @@ interface InputFieldProps {
 
 const InputField: React.FC<InputFieldProps> = ({ label, name, type = 'text', value, onChange, maxLength }) => (
   <div>
-    <label htmlFor={name} className="block text-sm font-medium text-secondary-800">{label}</label>
+    <label htmlFor={name} className="block text-sm font-medium text-primary-800">{label}</label>
     <input
       type={type}
       id={name}

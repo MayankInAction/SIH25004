@@ -1,5 +1,5 @@
-
 import { OwnerData, BreedInfo, Announcement } from './types';
+import { INDIAN_STATES_AND_DISTRICTS } from './utils/locationData';
 
 // Updated with 53 Indigenous + 1 Synthetic as per ICAR-NBAGR data
 export const CATTLE_BREEDS: string[] = [
@@ -13,7 +13,7 @@ export const BUFFALO_BREEDS: string[] = [
 
 export const ALL_BREEDS: BreedInfo[] = [
     // Cattle
-    ...CATTLE_BREEDS.map(b => ({ name: b, species: 'Cow' as 'Cow', facts: 'Detailed facts for this breed are being compiled and will be available soon.' })),
+    ...CATTLE_BREEDS.map(b => ({ name: b, species: 'Cattle' as 'Cattle', facts: 'Detailed facts for this breed are being compiled and will be available soon.' })),
     // Buffalo
     ...BUFFALO_BREEDS.map(b => ({ name: b, species: 'Buffalo' as 'Buffalo', facts: 'Detailed facts for this breed are being compiled and will be available soon.' })),
 ];
@@ -59,17 +59,19 @@ export const ANNOUNCEMENTS: Announcement[] = [
     }
 ];
 
+export const INDIAN_STATES: string[] = Object.keys(INDIAN_STATES_AND_DISTRICTS).sort();
 
-export const SAMPLE_OWNER_DATA: OwnerData = {
-    name: "Rajesh Kumar",
-    mobile: "9876543210",
-    aadhaar: "123456789012",
-    dob: "1985-06-15",
-    gender: "Male",
-    address: "123, Kisan Nagar",
-    village: "Ramgarh",
-    district: "Hissar",
-    state: "Haryana",
+
+export const EMPTY_OWNER_DATA: OwnerData = {
+    name: "",
+    mobile: "",
+    aadhaar: "",
+    dob: "",
+    gender: "Female",
+    address: "",
+    village: "",
+    district: "",
+    state: "",
 };
 
 export const ANALYSIS_MESSAGES: string[] = [

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse, Chat } from "@google/genai";
 import { Species, ChatMessage } from '../types';
 import { CATTLE_BREEDS, BUFFALO_BREEDS } from '../constants';
@@ -30,7 +31,7 @@ const breedIdSchema = {
 };
 
 export const identifyBreed = async (images: { mimeType: string; data: string }[], species: Species) => {
-  const breedList = species === 'Cow' ? CATTLE_BREEDS : BUFFALO_BREEDS;
+  const breedList = species === 'Cattle' ? CATTLE_BREEDS : BUFFALO_BREEDS;
 
   const prompt = `
     Analyze the attached image(s) of a single animal for breed identification.
@@ -92,8 +93,8 @@ const animalDetailSchema = {
         },
         species: {
             type: Type.STRING,
-            description: "The identified species. Must be either 'Cow' or 'Buffalo'.",
-            enum: ['Cow', 'Buffalo']
+            description: "The identified species. Must be either 'Cattle' or 'Buffalo'.",
+            enum: ['Cattle', 'Buffalo']
         },
         gender: {
             type: Type.STRING,
@@ -107,7 +108,7 @@ const animalDetailSchema = {
 export const detectAnimalDetails = async (image: { mimeType: string; data: string }) => {
     const prompt = `
     Analyze the attached image of a single animal.
-    1.  Identify the species. It must be one of: ['Cow', 'Buffalo'].
+    1.  Identify the species. It must be one of: ['Cattle', 'Buffalo'].
     2.  Identify the gender. It must be one of: ['Male', 'Female'].
     3.  Assess if the image is clear enough for identification. If not, or if it's not a cow or buffalo, set the 'error' field.
     

@@ -67,7 +67,7 @@ export const UpdateRecordModal: React.FC<UpdateRecordModalProps> = ({ isOpen, on
       >
         <div className="p-4 border-b border-cream-200 flex justify-between items-center">
           <h2 className="text-xl font-bold text-primary-900 flex items-center gap-2">
-            <Icon name="pencil-square" className="w-6 h-6 text-accent-600" />
+            <Icon name="pencil-square" className="w-6 h-6 text-accent-yellow-600" />
             Update Registration Record
           </h2>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-cream-200">
@@ -75,11 +75,11 @@ export const UpdateRecordModal: React.FC<UpdateRecordModalProps> = ({ isOpen, on
           </button>
         </div>
         <div className="p-6 space-y-4">
-          <p className="text-secondary-700">
+          <p className="text-primary-700">
             To find and update a record, please enter the owner's 12-digit Aadhaar number.
           </p>
           <div>
-            <label htmlFor="aadhaar-search" className="block text-sm font-medium text-secondary-800">
+            <label htmlFor="aadhaar-search" className="block text-sm font-medium text-primary-800">
               Aadhaar Number
             </label>
             <input
@@ -91,7 +91,7 @@ export const UpdateRecordModal: React.FC<UpdateRecordModalProps> = ({ isOpen, on
               onChange={e => setAadhaar(e.target.value.replace(/\D/g, ''))}
               onKeyPress={handleKeyPress}
               maxLength={12}
-              className="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-accent-500 focus:border-accent-500"
+              className="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-accent-yellow-500 focus:border-accent-yellow-500"
             />
           </div>
           {error && (

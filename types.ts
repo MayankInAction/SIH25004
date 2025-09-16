@@ -1,7 +1,8 @@
 
-export type Species = 'Cow' | 'Buffalo';
+export type Species = 'Cattle' | 'Buffalo';
 export type Gender = 'Male' | 'Female';
 export type Confidence = 'High' | 'Medium' | 'Low';
+export type AgeUnit = 'Years' | 'Months';
 
 export interface PhotoFile {
   id: string;
@@ -12,7 +13,8 @@ export interface PhotoFile {
 export interface AnimalData {
   id: string;
   species: Species;
-  age: string;
+  ageValue: string;
+  ageUnit: AgeUnit;
   gender: Gender;
   healthNotes: string;
   photos: PhotoFile[];

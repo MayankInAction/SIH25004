@@ -6,51 +6,62 @@ import { ResultsPage } from './ResultsPage';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { toBase64 } from '../utils/fileUtils';
 import { identifyBreed } from '../services/geminiService';
-import { SAMPLE_OWNER_DATA } from '../constants';
+import { EMPTY_OWNER_DATA } from '../constants';
 import { Icon } from './icons';
 
 interface RegistrationWizardProps {
   onBackToDashboard: () => void;
   registrationToUpdate?: Registration | null;
+  onViewReport: (registration: Registration) => void;
 }
 
 const getCircleClasses = (isCompleted: boolean, isCurrent: boolean) => {
   const baseClasses = 'relative flex h-8 w-8 items-center justify-center rounded-full transition-all duration-500 ease-in-out';
   if (isCompleted) {
-    return `${baseClasses} bg-accent-500 border-accent-500`;
+    return `${baseClasses} bg-primary-800 border-primary-800`;
   }
   if (isCurrent) {
-    return `${baseClasses} bg-white border-2 border-accent-500 scale-110 shadow-lg`;
+    return `${baseClasses} bg-white border-2 border-primary-800 scale-110 shadow-lg`;
   }
   return `${baseClasses} bg-white border-2 border-gray-300`;
 };
 
 const Stepper: React.FC<{ currentStep: number }> = ({ currentStep }) => {
   const steps = ["Animal Count", "Animal Details", "Owner Details", "Results"];
+  const progressPercentage = currentStep >= steps.length - 1 
+    ? 100 
+    : (100 / (steps.length - 1)) * currentStep;
+
   return (
-    <nav aria-label="Progress">
-      <ol role="list" className="flex items-center justify-center">
+    <nav aria-label="Progress" className="relative">
+      {/* Backing Line */}
+      <div className="absolute top-4 left-0 h-0.5 w-full bg-gray-200" aria-hidden="true" />
+      {/* Progress Line */}
+      <div 
+        className="absolute top-4 left-0 h-0.5 bg-primary-800 transition-all duration-500 ease-in-out" 
+        style={{ width: `${progressPercentage}%` }}
+        aria-hidden="true" 
+      />
+      <ol role="list" className="flex items-start justify-between">
         {steps.map((stepName, stepIdx) => {
           const isCompleted = currentStep > stepIdx;
           const isCurrent = currentStep === stepIdx;
 
+          const getLabelClasses = () => {
+            if (isCurrent) return 'text-primary-800 font-bold';
+            if (isCompleted) return 'text-primary-800 font-semibold';
+            return 'text-gray-500';
+          };
+          
           return (
-            <li key={stepName} className={`relative ${stepIdx !== steps.length - 1 ? 'pr-8 sm:pr-20' : ''}`}>
-              {/* Animated Connecting Line */}
-              <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                <div className={`h-0.5 w-full transition-colors duration-500 ease-in-out ${isCompleted ? 'bg-accent-500' : 'bg-gray-200'}`} />
-              </div>
-              
-              {/* Animated Step Circle */}
-              <div className={getCircleClasses(isCompleted, isCurrent)}>
+            <li key={stepName} className="flex flex-col items-center text-center z-10 w-24">
+              <div className={`${getCircleClasses(isCompleted, isCurrent)}`}>
                 <Icon name="check" className={`h-5 w-5 text-white transform transition-all duration-300 ease-in-out ${isCompleted ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
-                <span className={`h-2.5 w-2.5 bg-accent-500 rounded-full absolute transition-opacity duration-300 ${isCurrent ? 'opacity-100 animate-pulse' : 'opacity-0'}`} aria-hidden="true" />
+                <span className={`h-2.5 w-2.5 bg-primary-800 rounded-full absolute transition-opacity duration-300 ${isCurrent ? 'opacity-100 animate-pulse' : 'opacity-0'}`} aria-hidden="true" />
               </div>
-
-              {/* Animated Step Label for Current Step */}
-              <div className={`absolute top-10 left-1/2 -translate-x-1/2 w-max transition-all duration-300 ease-in-out ${isCurrent ? 'opacity-100' : 'opacity-0 -translate-y-2'}`}>
-                <span className="text-sm font-semibold text-accent-600">{stepName}</span>
-              </div>
+              <p className={`mt-3 text-sm transition-colors duration-300 ${getLabelClasses()}`}>
+                {stepName}
+              </p>
             </li>
           );
         })}
@@ -60,41 +71,56 @@ const Stepper: React.FC<{ currentStep: number }> = ({ currentStep }) => {
 };
 
 
-export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackToDashboard, registrationToUpdate }) => {
+export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackToDashboard, registrationToUpdate, onViewReport }) => {
   const isUpdateMode = !!registrationToUpdate;
 
+  const createNewAnimal = (index: number): AnimalData => ({
+    id: `animal-${Date.now()}-${index}`,
+    species: 'Cattle',
+    ageValue: '',
+    ageUnit: 'Years',
+    gender: 'Female',
+    healthNotes: '',
+    photos: [],
+  });
+
   const [step, setStep] = useState(isUpdateMode ? 1 : 0);
-  const [animalCount, setAnimalCount] = useState(1);
-  const [animals, setAnimals] = useState<AnimalData[]>([]);
-  const [owner, setOwner] = useState<OwnerData>(SAMPLE_OWNER_DATA);
+  const [animals, setAnimals] = useState<AnimalData[]>(() =>
+    isUpdateMode ? registrationToUpdate.animals : [createNewAnimal(0)]
+  );
+  const [owner, setOwner] = useState<OwnerData>(isUpdateMode ? registrationToUpdate.owner : EMPTY_OWNER_DATA);
   const [animalResults, setAnimalResults] = useState<AnimalResult[]>([]);
   const [registrations, setRegistrations] = useLocalStorage<Registration[]>('registrations', []);
+  const [completedRegistration, setCompletedRegistration] = useState<Registration | null>(null);
 
   const [analysisPromise, setAnalysisPromise] = useState<Promise<AnimalResult[]> | null>(null);
   const [isOwnerFormSubmitting, setIsOwnerFormSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (registrationToUpdate) {
-      setStep(1);
-      setAnimalCount(registrationToUpdate.animals.length);
-      setAnimals(registrationToUpdate.animals);
-      setOwner(registrationToUpdate.owner);
+  const handleAnimalCountSubmit = (newCount: number) => {
+    const currentCount = animals.length;
+
+    if (newCount < currentCount) {
+        const animalsToBeRemoved = animals.slice(newCount);
+        const hasData = animalsToBeRemoved.some(
+            animal => animal.photos.length > 0 || animal.ageValue.trim() !== '' || animal.healthNotes.trim() !== ''
+        );
+        
+        if (hasData) {
+            const confirmation = window.confirm(
+                `Reducing the animal count from ${currentCount} to ${newCount} will remove the data for the last ${currentCount - newCount} animal(s). Are you sure?`
+            );
+            if (!confirmation) {
+                return; 
+            }
+        }
+        setAnimals(prev => prev.slice(0, newCount));
+    } 
+    else if (newCount > currentCount) {
+        const diff = newCount - currentCount;
+        const newAnimalEntries = Array.from({ length: diff }, (_, i) => createNewAnimal(currentCount + i));
+        setAnimals(prev => [...prev, ...newAnimalEntries]);
     }
-  }, [registrationToUpdate]);
-
-
-  const handleAnimalCountSubmit = (count: number) => {
-    setAnimalCount(count);
-    setAnimals(
-      Array.from({ length: count }, (_, i) => ({
-        id: `animal-${Date.now()}-${i}`,
-        species: 'Cow',
-        age: '',
-        gender: 'Female',
-        healthNotes: '',
-        photos: [],
-      }))
-    );
+    
     setStep(1);
   };
 
@@ -113,7 +139,7 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
             alert(`Please upload at least one photo for each animal.`);
             return;
         }
-        if (animal.age.trim() === '') {
+        if (animal.ageValue.trim() === '') {
             alert(`Please enter the age for each animal.`);
             return;
         }
@@ -122,14 +148,8 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
     const runAnalysis = async (): Promise<AnimalResult[]> => {
       return Promise.all(
         animals.map(async (animal) => {
-          // In update mode, a photo File object might not exist if not re-uploaded.
-          // AI analysis requires the File object to convert to base64.
-          // This logic assumes either photos are re-uploaded or the original File object is still in memory.
-          // A more robust solution would store base64 in localStorage, but that's a larger change.
           const validPhotos = animal.photos.filter(p => p.file);
           if (validPhotos.length === 0) {
-              // If no valid file, return existing AI result to avoid re-analysis error.
-              // This is a safe fallback for updating non-photo info.
               return (animal as AnimalResult).aiResult ? (animal as AnimalResult) : { ...animal, aiResult: { error: 'Photo file not available for re-analysis.', breedName: 'Unknown', confidence: 'Low', milkYieldPotential: '', careNotes: '', reasoning: '' } };
           }
 
@@ -173,6 +193,7 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
           reg.id === registrationToUpdate.id ? updatedRegistration : reg
         );
         setRegistrations(updatedRegistrations);
+        setCompletedRegistration(updatedRegistration);
       } else {
         const newRegistration: Registration = {
             id: `reg-${Date.now()}`,
@@ -181,6 +202,7 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
             animals: results
         };
         setRegistrations([...registrations, newRegistration]);
+        setCompletedRegistration(newRegistration);
       }
       
       setStep(3);
@@ -196,7 +218,7 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
   const renderStep = () => {
     switch (step) {
       case 0:
-        return isUpdateMode ? null : <AnimalCountStep onSubmit={handleAnimalCountSubmit} onBack={onBackToDashboard} />;
+        return isUpdateMode ? null : <AnimalCountStep onSubmit={handleAnimalCountSubmit} onBack={onBackToDashboard} initialCount={animals.length} />;
       case 1:
         return <AnimalDetailsStep animals={animals} onUpdate={updateAnimal} onSubmit={handleAnimalDetailsSubmit} onBack={() => isUpdateMode ? onBackToDashboard() : setStep(0)} />;
       case 2:
@@ -208,16 +230,22 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
                     isUpdateMode={isUpdateMode}
                 />;
       case 3:
-        return <ResultsPage results={animalResults} owner={owner} onFinish={onBackToDashboard} />;
+        return <ResultsPage 
+                  results={animalResults} 
+                  owner={owner} 
+                  onFinish={onBackToDashboard}
+                  registration={completedRegistration}
+                  onViewReport={onViewReport}
+                />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-8">
       {step < 3 && (
-        <div className="bg-white p-6 rounded-xl border border-cream-200 shadow-sm">
+        <div className="bg-white p-8 pt-10 pb-16 rounded-xl border border-cream-200 shadow-sm">
           <Stepper currentStep={step} />
         </div>
       )}
@@ -226,8 +254,12 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
   );
 };
 
-const AnimalCountStep: React.FC<{ onSubmit: (count: number) => void, onBack: () => void }> = ({ onSubmit, onBack }) => {
-  const [count, setCount] = useState(1);
+const AnimalCountStep: React.FC<{ onSubmit: (count: number) => void, onBack: () => void, initialCount: number }> = ({ onSubmit, onBack, initialCount }) => {
+  const [count, setCount] = useState(initialCount);
+  
+  useEffect(() => {
+    setCount(initialCount);
+  }, [initialCount]);
 
   const adjustCount = (amount: number) => {
     setCount(prev => {
@@ -242,13 +274,13 @@ const AnimalCountStep: React.FC<{ onSubmit: (count: number) => void, onBack: () 
   return (
     <div className="bg-white p-8 rounded-xl shadow-sm text-center border border-cream-200">
       <h2 className="text-2xl font-bold mb-2 text-primary-900">New Registration Batch</h2>
-      <p className="text-secondary-700 mb-6">How many animals are you registering for this owner?</p>
+      <p className="text-primary-700 mb-6">How many animals are you registering for this owner?</p>
       
       <div className="flex items-center justify-center space-x-4 my-8">
         <button 
           onClick={() => adjustCount(-1)} 
           disabled={count <= 1}
-          className="w-16 h-16 bg-cream-100 text-secondary-700 rounded-full text-4xl font-light flex items-center justify-center hover:bg-cream-200 disabled:bg-cream-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-transform duration-150 active:scale-95"
+          className="w-16 h-16 bg-cream-100 text-primary-700 rounded-full text-4xl font-light flex items-center justify-center hover:bg-cream-200 disabled:bg-cream-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-transform duration-150 active:scale-95"
           aria-label="Decrease animal count"
         >
           -
@@ -257,7 +289,7 @@ const AnimalCountStep: React.FC<{ onSubmit: (count: number) => void, onBack: () 
         <button 
           onClick={() => adjustCount(1)}
           disabled={count >= 50}
-          className="w-16 h-16 bg-cream-100 text-secondary-700 rounded-full text-4xl font-light flex items-center justify-center hover:bg-cream-200 disabled:bg-cream-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-transform duration-150 active:scale-95"
+          className="w-16 h-16 bg-cream-100 text-primary-700 rounded-full text-4xl font-light flex items-center justify-center hover:bg-cream-200 disabled:bg-cream-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-transform duration-150 active:scale-95"
           aria-label="Increase animal count"
         >
           +
@@ -266,7 +298,7 @@ const AnimalCountStep: React.FC<{ onSubmit: (count: number) => void, onBack: () 
 
       <p className="text-sm text-gray-500 mb-8 -mt-4">For performance, you can register up to 50 animals in a single batch.</p>
       <div className="flex justify-center space-x-4">
-        <button onClick={onBack} className="px-6 py-2 border border-gray-300 rounded-md text-secondary-700 font-semibold hover:bg-gray-50 transition-transform duration-150 active:scale-95">Back</button>
+        <button onClick={onBack} className="px-6 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 transition-transform duration-150 active:scale-95">Back</button>
         <button onClick={() => onSubmit(count)} className="px-8 py-2 bg-accent-500 text-white font-semibold rounded-md hover:bg-accent-600 shadow-sm transition-transform duration-150 active:scale-95">Next</button>
       </div>
     </div>
@@ -279,7 +311,7 @@ const AnimalDetailsStep: React.FC<{ animals: AnimalData[], onUpdate: (index: num
       <AnimalForm key={animal.id} index={index} animalData={animal} onUpdate={onUpdate} />
     ))}
     <div className="flex justify-between mt-8">
-      <button onClick={onBack} className="px-6 py-2 border border-gray-300 rounded-md text-secondary-700 font-semibold hover:bg-gray-50 transition-transform duration-150 active:scale-95">Back</button>
+      <button onClick={onBack} className="px-6 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 transition-transform duration-150 active:scale-95">Back</button>
       <button onClick={onSubmit} className="px-8 py-2 bg-accent-500 text-white font-semibold rounded-md hover:bg-accent-600 shadow-sm transition-transform duration-150 active:scale-95">Next: Owner Details</button>
     </div>
   </div>
