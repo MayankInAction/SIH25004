@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Registration, AnimalResult, Confidence } from '../types';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Icon } from './icons';
+import { INDIAN_STATES, ALL_BREEDS } from '../constants';
 
 // FIX: Added initialSearchTerm to props to accept a search term from other components.
 interface HistoryPageProps {
@@ -17,19 +18,41 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ selectedRegistration, 
   const [isMounted, setIsMounted] = useState(false);
   // FIX: Initialize searchTerm state with the passed-in prop.
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({ state: '', species: '', breed: '' });
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+    setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({ state: '', species: '', breed: '' });
+    setSearchTerm('');
+  };
 
   const filteredRegistrations = useMemo(() => 
     registrations
       .filter(reg => {
         const lowerSearchTerm = searchTerm.toLowerCase();
-        if (!lowerSearchTerm) return true;
-        return (
+
+        // Search term filter (owner name, aadhaar)
+        const searchTermMatch = !lowerSearchTerm || 
           reg.owner.name.toLowerCase().includes(lowerSearchTerm) ||
-          reg.owner.aadhaar.includes(searchTerm)
-        );
+          reg.owner.aadhaar.includes(searchTerm);
+        
+        // State filter
+        const stateMatch = !filters.state || reg.owner.state === filters.state;
+
+        // Species filter
+        const speciesMatch = !filters.species || reg.animals.some(animal => animal.species === filters.species);
+
+        // Breed filter
+        const breedMatch = !filters.breed || reg.animals.some(animal => !animal.aiResult.error && animal.aiResult.breedName === filters.breed);
+
+        return searchTermMatch && stateMatch && speciesMatch && breedMatch;
       })
       .sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
-    [registrations, searchTerm]
+    [registrations, searchTerm, filters]
   );
   
   useEffect(() => {
@@ -60,15 +83,55 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ selectedRegistration, 
         <button onClick={onBack} className="px-4 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 text-sm transition-transform duration-150 active:scale-95">Back to Dashboard</button>
       </div>
 
-      <div className="mb-6 relative">
-          <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
-          <input
-              type="text"
-              placeholder="Search by Owner Name or Aadhaar Number..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full p-3 pl-12 border border-gray-300 rounded-full bg-white text-gray-900 focus:ring-accent-500 focus:border-accent-500 shadow-sm"
-          />
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-cream-200 mb-6">
+          <div className="flex gap-4 items-center">
+              <div className="flex-grow relative">
+                  <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
+                  <input
+                      type="text"
+                      placeholder="Search by Owner Name or Aadhaar..."
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      className="w-full p-3 pl-12 border border-gray-300 rounded-full bg-cream-50 text-gray-900 focus:ring-accent-500 focus:border-accent-500"
+                  />
+              </div>
+              <button onClick={() => setShowFilters(!showFilters)} className="px-4 py-3 border border-gray-300 rounded-full text-primary-700 font-semibold hover:bg-gray-50 text-sm flex items-center gap-2">
+                  <Icon name="filter" className="w-5 h-5" />
+                  Filters
+              </button>
+          </div>
+
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-cream-200">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="state-filter" className="block text-sm font-medium text-primary-800">State</label>
+                  <select id="state-filter" name="state" value={filters.state} onChange={handleFilterChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900">
+                    <option value="">All States</option>
+                    {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="species-filter" className="block text-sm font-medium text-primary-800">Species</label>
+                  <select id="species-filter" name="species" value={filters.species} onChange={handleFilterChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900">
+                    <option value="">All Species</option>
+                    <option value="Cattle">Cattle</option>
+                    <option value="Buffalo">Buffalo</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="breed-filter" className="block text-sm font-medium text-primary-800">Breed</label>
+                  <select id="breed-filter" name="breed" value={filters.breed} onChange={handleFilterChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900">
+                    <option value="">All Breeds</option>
+                    {ALL_BREEDS.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button onClick={clearFilters} className="text-sm font-semibold text-accent-600 hover:underline">Clear All Filters & Search</button>
+              </div>
+            </div>
+          )}
       </div>
       
       {filteredRegistrations.length > 0 ? (
@@ -111,7 +174,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ selectedRegistration, 
         <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-cream-200">
           <Icon name="search" className="w-16 h-16 mx-auto text-gray-400" />
           <h2 className="mt-4 text-xl font-semibold text-gray-700">No Matching Registrations</h2>
-          <p className="mt-2 text-gray-500">{searchTerm ? 'Try a different search term.' : 'Complete a new registration to see it listed here.'}</p>
+          <p className="mt-2 text-gray-500">{searchTerm || filters.state || filters.species || filters.breed ? 'Try different search or filter criteria.' : 'Complete a new registration to see it listed here.'}</p>
         </div>
       )}
     </div>
@@ -124,7 +187,13 @@ const ReportHeader: React.FC<{regId: string}> = ({regId}) => (
             <span className="text-5xl mr-4">🐮</span>
             <div>
                 <h1 className="text-3xl font-bold text-primary-900">Animal Breed Verification Report</h1>
-                <p className="text-sm text-primary-700">Generated by पशुVision AI</p>
+                 <div className="flex items-center gap-2 mt-1">
+                    <p className="text-sm text-primary-700">Generated by पशुVision AI</p>
+                    <span className="flex items-center gap-1 bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full border border-green-200">
+                        <Icon name="check" className="w-4 h-4" />
+                        Verified
+                    </span>
+                </div>
             </div>
         </div>
         <div className="text-right">

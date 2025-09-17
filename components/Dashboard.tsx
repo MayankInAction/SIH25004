@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Icon } from './icons';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -337,6 +336,7 @@ export const Dashboard: React.FC<{
       <div>
         <h1 className="text-3xl font-bold text-primary-900">Welcome to पशुVision</h1>
         <p className="text-primary-700 mt-1">Your AI-powered assistant for accurate livestock management.</p>
+        <p className="text-xs text-primary-600 mt-2 font-semibold">In association with the Ministry of Fisheries, Animal Husbandry & Dairying</p>
       </div>
 
       {/* At-a-glance Stats */}

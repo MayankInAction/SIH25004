@@ -15,17 +15,6 @@ interface RegistrationWizardProps {
   onViewReport: (registration: Registration) => void;
 }
 
-const getCircleClasses = (isCompleted: boolean, isCurrent: boolean) => {
-  const baseClasses = 'relative flex h-8 w-8 items-center justify-center rounded-full transition-all duration-500 ease-in-out';
-  if (isCompleted) {
-    return `${baseClasses} bg-primary-800 border-primary-800`;
-  }
-  if (isCurrent) {
-    return `${baseClasses} bg-white border-2 border-primary-800 scale-110 shadow-lg`;
-  }
-  return `${baseClasses} bg-white border-2 border-gray-300`;
-};
-
 const Stepper: React.FC<{ currentStep: number }> = ({ currentStep }) => {
   const steps = ["Animal Count", "Animal Details", "Owner Details", "Results"];
   const progressPercentage = currentStep >= steps.length - 1 
@@ -35,10 +24,10 @@ const Stepper: React.FC<{ currentStep: number }> = ({ currentStep }) => {
   return (
     <nav aria-label="Progress" className="relative">
       {/* Backing Line */}
-      <div className="absolute top-4 left-0 h-0.5 w-full bg-gray-200" aria-hidden="true" />
+      <div className="absolute top-5 left-0 h-1 w-full bg-cream-200 rounded-full" aria-hidden="true" />
       {/* Progress Line */}
       <div 
-        className="absolute top-4 left-0 h-0.5 bg-primary-800 transition-all duration-500 ease-in-out" 
+        className="absolute top-5 left-0 h-1 bg-accent-500 transition-all duration-500 ease-in-out rounded-full" 
         style={{ width: `${progressPercentage}%` }}
         aria-hidden="true" 
       />
@@ -47,19 +36,36 @@ const Stepper: React.FC<{ currentStep: number }> = ({ currentStep }) => {
           const isCompleted = currentStep > stepIdx;
           const isCurrent = currentStep === stepIdx;
 
-          const getLabelClasses = () => {
-            if (isCurrent) return 'text-primary-800 font-bold';
-            if (isCompleted) return 'text-primary-800 font-semibold';
-            return 'text-gray-500';
-          };
-          
           return (
             <li key={stepName} className="flex flex-col items-center text-center z-10 w-24">
-              <div className={`${getCircleClasses(isCompleted, isCurrent)}`}>
-                <Icon name="check" className={`h-5 w-5 text-white transform transition-all duration-300 ease-in-out ${isCompleted ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
-                <span className={`h-2.5 w-2.5 bg-primary-800 rounded-full absolute transition-opacity duration-300 ${isCurrent ? 'opacity-100 animate-pulse' : 'opacity-0'}`} aria-hidden="true" />
+              <div className={`
+                relative flex h-10 w-10 items-center justify-center rounded-full font-bold text-lg
+                transition-all duration-500 ease-in-out
+                ${isCompleted ? 'bg-accent-500 border-2 border-accent-500' : ''}
+                ${isCurrent ? 'bg-white border-2 border-accent-500 scale-110 shadow-lg' : ''}
+                ${!isCompleted && !isCurrent ? 'bg-white border-2 border-gray-300' : ''}
+              `}>
+                {/* Checkmark for completed steps */}
+                <Icon name="check" className={`
+                  h-6 w-6 text-white transform transition-all duration-300 ease-in-out
+                  ${isCompleted ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}
+                `} />
+                
+                {/* Step Number for current and future steps */}
+                <span className={`
+                  absolute transition-opacity duration-300
+                  ${isCompleted ? 'opacity-0' : 'opacity-100'}
+                  ${isCurrent ? 'text-accent-600' : 'text-gray-400'}
+                `}>
+                  {stepIdx + 1}
+                </span>
               </div>
-              <p className={`mt-3 text-sm transition-colors duration-300 ${getLabelClasses()}`}>
+              <p className={`
+                mt-3 text-sm transition-colors duration-300
+                ${isCurrent ? 'text-accent-600 font-bold' : ''}
+                ${isCompleted ? 'text-primary-800 font-semibold' : ''}
+                ${!isCompleted && !isCurrent ? 'text-gray-500' : ''}
+              `}>
                 {stepName}
               </p>
             </li>

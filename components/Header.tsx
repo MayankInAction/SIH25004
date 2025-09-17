@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from './icons';
 
 interface HeaderProps {
@@ -8,6 +8,13 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onSearch, showSearch }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timerId = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timerId);
+  }, []);
+
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
@@ -52,7 +59,10 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, showSearch }) => {
           )}
 
           {/* Right: Icons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-300 font-mono tracking-wider hidden sm:block">
+                {currentTime.toLocaleTimeString()}
+              </span>
               <button className="p-2 rounded-full text-cream-100 hover:bg-primary-800 hover:text-white transition-colors">
                   <Icon name="user-circle" className="w-6 h-6"/>
               </button>

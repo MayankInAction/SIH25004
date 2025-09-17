@@ -1,8 +1,7 @@
-
 import React from 'react';
 
 type IconProps = {
-  name: 'camera' | 'upload' | 'trash' | 'check' | 'cow' | 'buffalo' | 'user' | 'location' | 'chevron-right' | 'ai-sparkles' | 'history' | 'chart' | 'print' | 'qrcode' | 'send' | 'chat-bubble' | 'close' | 'search' | 'bell' | 'user-circle' | 'book-open' | 'megaphone' | 'help-circle' | 'pencil-square' | 'syringe' | 'building-library' | 'light-bulb';
+  name: 'camera' | 'upload' | 'trash' | 'check' | 'cow' | 'buffalo' | 'user' | 'location' | 'chevron-right' | 'ai-sparkles' | 'history' | 'chart' | 'print' | 'qrcode' | 'send' | 'chat-bubble' | 'close' | 'search' | 'bell' | 'user-circle' | 'book-open' | 'megaphone' | 'help-circle' | 'pencil-square' | 'syringe' | 'building-library' | 'light-bulb' | 'filter';
   className?: string;
 };
 
@@ -21,7 +20,7 @@ export const Icon: React.FC<IconProps> = ({ name, className = 'w-6 h-6' }) => {
     'ai-sparkles': <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM18 15.75l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 20l-1.035.259a3.375 3.375 0 00-2.456 2.456L18 23.75l-.259-1.035a3.375 3.375 0 00-2.456-2.456L14.25 20l1.035-.259a3.375 3.375 0 002.456-2.456L18 15.75z" />,
     history: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />,
     chart: <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 1.5m1-1.5l1-1.5m0 0l-1 1.5m1-1.5l-1-1.5M6 16.5v3M18 16.5v3" />,
-    print: <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.455 42.455 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.32 0c0-1.243-.984-2.25-2.207-2.25H9.547c-1.223 0-2.207 1.007-2.207 2.25m11.32 0H6.34" />,
+    print: <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />,
     qrcode: <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.5v15h15v-15h-15zM12 9.75v4.5m-4.5-4.5v4.5m9-4.5v4.5M9.75 6H12v2.25H9.75V6zm-4.5 0H7.5v2.25H5.25V6zm9 0h2.25v2.25H14.25V6z" />,
     send: <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />,
     'chat-bubble': <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 01-2.53-.401m-1.11-3.414A5.961 5.961 0 016.75 15.75c-3.05 0-5.5-2.5-5.5-5.5S3.7 4.75 6.75 4.75c2.32 0 4.34.84 5.25 2.05m8.53 1.45a.75.75 0 00-1.06-1.06l-1.5 1.5-1.5-1.5a.75.75 0 10-1.06 1.06l1.5 1.5-1.5 1.5a.75.75 0 101.06 1.06l1.5-1.5 1.5 1.5a.75.75 0 101.06-1.06l-1.5-1.5 1.5-1.5z" />,
@@ -36,6 +35,7 @@ export const Icon: React.FC<IconProps> = ({ name, className = 'w-6 h-6' }) => {
     syringe: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />,
     'building-library': <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />,
     'light-bulb': <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.311a6.01 6.01 0 00-3.75 0M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
+    filter: <path strokeLinecap="round" strokeLinejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 9.75V10.5" />,
   };
   
   return (
