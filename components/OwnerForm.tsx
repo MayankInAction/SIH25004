@@ -21,6 +21,8 @@ const Spinner: React.FC = () => (
 export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onBack, isSubmitting, isUpdateMode }) => {
   const [formData, setFormData] = useState<OwnerData>(initialData);
   const [districts, setDistricts] = useState<string[]>([]);
+  const [errors, setErrors] = useState<Partial<Record<keyof OwnerData, string>>>({});
+
 
   useEffect(() => {
     setFormData(initialData);
@@ -37,23 +39,60 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    if (name === 'state') {
-        // When state changes, reset district
-        setFormData({ ...formData, state: value, district: '' });
-    } else {
-        setFormData({ ...formData, [name]: value });
+    
+    // Clear the error for the field being edited
+    if (errors[name as keyof OwnerData]) {
+        setErrors(prev => ({ ...prev, [name]: undefined }));
     }
+
+    if (name === 'state') {
+        setFormData({ ...formData, state: value, district: '' });
+        return;
+    }
+
+    if (name === 'mobile' || name === 'aadhaar') {
+        // Allow only numeric input for mobile and aadhaar
+        const numericValue = value.replace(/\D/g, '');
+        setFormData({ ...formData, [name]: numericValue });
+        return;
+    }
+
+    setFormData({ ...formData, [name]: value });
   };
   
+  const validateForm = (): boolean => {
+      const newErrors: Partial<Record<keyof OwnerData, string>> = {};
+      let isValid = true;
+      
+      // Generic required field check
+      (Object.keys(formData) as Array<keyof OwnerData>).forEach(key => {
+          if (formData[key].toString().trim() === '') {
+              newErrors[key] = 'This field is required.';
+              isValid = false;
+          }
+      });
+      
+      // Specific validation for mobile (overwrites "required" if applicable)
+      if (formData.mobile.trim() !== '' && formData.mobile.length !== 10) {
+          newErrors.mobile = 'Mobile number must be exactly 10 digits.';
+          isValid = false;
+      }
+      
+      // Specific validation for aadhaar (overwrites "required" if applicable)
+      if (formData.aadhaar.trim() !== '' && formData.aadhaar.length !== 12) {
+          newErrors.aadhaar = 'Aadhaar number must be exactly 12 digits.';
+          isValid = false;
+      }
+      
+      setErrors(newErrors);
+      return isValid;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    for (const key in formData) {
-        if (formData[key as keyof OwnerData].toString().trim() === '') {
-            alert(`Please fill in the '${key}' field.`);
-            return;
-        }
+    if (validateForm()) {
+        onSubmit(formData);
     }
-    onSubmit(formData);
   };
 
   return (
@@ -68,16 +107,17 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
       <div>
         <h4 className="text-md font-bold text-primary-900 border-b pb-2 mb-4">Personal Details</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Owner Name" name="name" value={formData.name} onChange={handleChange} />
-            <InputField label="Mobile Number" name="mobile" type="tel" value={formData.mobile} onChange={handleChange} />
-            <InputField label="Aadhaar Number" name="aadhaar" type="text" value={formData.aadhaar} onChange={handleChange} maxLength={12} />
-            <InputField label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} />
+            <InputField label="Owner Name" name="name" value={formData.name} onChange={handleChange} error={errors.name} />
+            <InputField label="Mobile Number" name="mobile" type="tel" value={formData.mobile} onChange={handleChange} maxLength={10} error={errors.mobile} />
+            <InputField label="Aadhaar Number" name="aadhaar" type="text" value={formData.aadhaar} onChange={handleChange} maxLength={12} error={errors.aadhaar} />
+            <InputField label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} error={errors.dob} />
             <div>
               <label className="block text-sm font-medium text-primary-800">Gender</label>
-              <select name="gender" value={formData.gender} onChange={handleChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900">
+              <select name="gender" value={formData.gender} onChange={handleChange} className={`mt-1 block w-full p-2 border ${errors.gender ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900`}>
                 <option value="Female">Female</option>
                 <option value="Male">Male</option>
               </select>
+               {errors.gender && <p className="mt-1 text-xs text-red-600">{errors.gender}</p>}
             </div>
         </div>
       </div>
@@ -85,8 +125,8 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
       <div>
         <h4 className="text-md font-bold text-primary-900 border-b pb-2 mb-4">Location Details</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Full Address" name="address" value={formData.address} onChange={handleChange} />
-            <InputField label="Village / Town" name="village" value={formData.village} onChange={handleChange} />
+            <InputField label="Full Address" name="address" value={formData.address} onChange={handleChange} error={errors.address} />
+            <InputField label="Village / Town" name="village" value={formData.village} onChange={handleChange} error={errors.village} />
             <div>
               <label htmlFor="state" className="block text-sm font-medium text-primary-800">State</label>
               <select
@@ -94,7 +134,7 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
                 name="state"
                 value={formData.state}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900"
+                className={`mt-1 block w-full p-2 border ${errors.state ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900`}
                 required
               >
                 <option value="" disabled>Select a state</option>
@@ -102,6 +142,7 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
                   <option key={state} value={state}>{state}</option>
                 ))}
               </select>
+              {errors.state && <p className="mt-1 text-xs text-red-600">{errors.state}</p>}
             </div>
             <div>
               <label htmlFor="district" className="block text-sm font-medium text-primary-800">District</label>
@@ -110,7 +151,7 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
                 name="district"
                 value={formData.district}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900 disabled:bg-gray-100"
+                className={`mt-1 block w-full p-2 border ${errors.district ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900 disabled:bg-gray-100`}
                 required
                 disabled={!formData.state || districts.length === 0}
               >
@@ -119,6 +160,7 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
                   <option key={district} value={district}>{district}</option>
                 ))}
               </select>
+              {errors.district && <p className="mt-1 text-xs text-red-600">{errors.district}</p>}
             </div>
         </div>
       </div>
@@ -147,14 +189,15 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
 
 interface InputFieldProps {
   label: string;
-  name: keyof Omit<OwnerData, 'state' | 'district'>;
+  name: keyof Omit<OwnerData, 'state' | 'district' | 'gender'>;
   type?: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   maxLength?: number;
+  error?: string | null;
 }
 
-const InputField: React.FC<InputFieldProps> = ({ label, name, type = 'text', value, onChange, maxLength }) => (
+const InputField: React.FC<InputFieldProps> = ({ label, name, type = 'text', value, onChange, maxLength, error }) => (
   <div>
     <label htmlFor={name} className="block text-sm font-medium text-primary-800">{label}</label>
     <input
@@ -164,8 +207,9 @@ const InputField: React.FC<InputFieldProps> = ({ label, name, type = 'text', val
       value={value}
       onChange={onChange}
       maxLength={maxLength}
-      className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900"
+      className={`mt-1 block w-full p-2 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900`}
       required
     />
+    {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
   </div>
 );

@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Icon } from './icons';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Registration, ChatMessage, BreedInfo } from '../types';
-import { startGeneralChat, sendMessageToGeneralChat } from '../services/geminiService';
-import { ANNOUNCEMENTS, ALL_BREEDS } from '../constants';
+import { Registration, ChatMessage, BreedInfo, Announcement } from '../types';
+import { startGeneralChat, sendMessageToGeneralChat, getBreedFacts, getAnnouncements } from '../services/geminiService';
+import { ALL_BREEDS } from '../constants';
 import { UpdateRecordModal } from './UpdateRecordModal';
 
 
@@ -92,15 +93,40 @@ const GeneralChatbot: React.FC = () => {
 
 const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isOpen, onClose }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [breeds, setBreeds] = useState<BreedInfo[]>(ALL_BREEDS);
     const [selectedBreed, setSelectedBreed] = useState<BreedInfo | null>(null);
+    const [isLoadingFacts, setIsLoadingFacts] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
+    const defaultFactText = 'Detailed facts for this breed are being compiled and will be available soon.';
 
     const filteredBreeds = useMemo(() => {
-        if (!searchTerm) return ALL_BREEDS;
-        return ALL_BREEDS.filter(breed =>
+        if (!searchTerm) return breeds;
+        return breeds.filter(breed =>
             breed.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
-    }, [searchTerm]);
+    }, [searchTerm, breeds]);
+
+    const handleSelectBreed = async (breed: BreedInfo) => {
+        setSelectedBreed(breed);
+        if (breed.facts === defaultFactText) {
+            setIsLoadingFacts(true);
+            try {
+                const result = await getBreedFacts(breed.name, breed.species);
+                if (!result.error) {
+                    const updatedBreed = { ...breed, facts: result.facts, sources: result.sources };
+                    setSelectedBreed(updatedBreed);
+                    // Update the main list to cache the result
+                    setBreeds(prevBreeds =>
+                        prevBreeds.map(b => b.name === breed.name ? updatedBreed : b)
+                    );
+                } else {
+                    setSelectedBreed({ ...breed, facts: result.facts });
+                }
+            } finally {
+                setIsLoadingFacts(false);
+            }
+        }
+    };
     
     useEffect(() => {
       const handleEsc = (event: KeyboardEvent) => {
@@ -145,7 +171,7 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
                        <ul className="divide-y divide-cream-200">
                            {filteredBreeds.length > 0 ? filteredBreeds.map(breed => (
                                <li key={breed.name}>
-                                   <button onClick={() => setSelectedBreed(breed)} className={`w-full text-left p-3 hover:bg-cream-100 ${selectedBreed?.name === breed.name ? 'bg-accent-yellow-100' : ''}`}>
+                                   <button onClick={() => handleSelectBreed(breed)} className={`w-full text-left p-3 hover:bg-cream-100 ${selectedBreed?.name === breed.name ? 'bg-accent-yellow-100' : ''}`}>
                                         <p className="font-semibold text-primary-800">{breed.name}</p>
                                         <p className="text-sm text-primary-700">{breed.species}</p>
                                    </button>
@@ -156,11 +182,31 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
                        </ul>
                     </div>
                     <div className="overflow-y-auto border border-cream-200 rounded-lg bg-white p-4 max-h-[55vh]">
-                        {selectedBreed ? (
+                       {isLoadingFacts ? (
+                            <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                                <Icon name="ai-sparkles" className="w-12 h-12 text-gray-400 animate-pulse mb-2"/>
+                                <p className="font-semibold">Fetching live data using Google Search...</p>
+                                <p className="text-sm">Please wait a moment.</p>
+                            </div>
+                        ) : selectedBreed ? (
                             <div>
                                 <h3 className="text-lg font-bold text-primary-900">{selectedBreed.name}</h3>
                                 <p className="text-sm font-semibold text-accent-yellow-600 mb-2">{selectedBreed.species}</p>
                                 <p className="text-primary-800 whitespace-pre-wrap">{selectedBreed.facts}</p>
+                                {selectedBreed.sources && selectedBreed.sources.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t border-cream-200">
+                                        <h4 className="text-sm font-bold text-primary-800 mb-2">Sources:</h4>
+                                        <ul className="space-y-1 list-disc list-inside">
+                                            {selectedBreed.sources.map((source, index) => (
+                                                <li key={index} className="text-sm text-secondary-700 hover:text-secondary-600 truncate">
+                                                    <a href={source.uri} target="_blank" rel="noopener noreferrer" className="underline" title={source.title}>
+                                                        {source.title || new URL(source.uri).hostname}
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                              <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
@@ -250,6 +296,18 @@ export const Dashboard: React.FC<{
   const [registrations] = useLocalStorage<Registration[]>('registrations', []);
   const [isLearningHubOpen, setIsLearningHubOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      setIsLoadingAnnouncements(true);
+      const data = await getAnnouncements();
+      setAnnouncements(data);
+      setIsLoadingAnnouncements(false);
+    };
+    fetchAnnouncements();
+  }, []);
 
   const { totalAnimals, mostCommonBreed } = useMemo(() => {
     const breedCounts: { [key:string]: number } = {};
@@ -319,13 +377,27 @@ export const Dashboard: React.FC<{
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-cream-200">
             <h3 className="font-bold text-primary-900 mb-4 flex items-center gap-2"><Icon name="megaphone" className="w-5 h-5 text-accent-yellow-600"/>Announcements</h3>
-            <div className="space-y-3">
-              {ANNOUNCEMENTS.map(ann => (
-                  <div key={ann.id}>
-                    <h4 className="font-semibold text-primary-800">{ann.title}</h4>
-                    <p className="text-sm text-primary-700">{ann.content} <a href="#" className="text-accent-yellow-600 font-semibold hover:underline">{ann.linkText}</a></p>
+            <div className="space-y-4">
+              {isLoadingAnnouncements ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-full"></div>
                   </div>
-              ))}
+                ))
+              ) : (
+                announcements.map(ann => (
+                    <div key={ann.id}>
+                      <h4 className="font-semibold text-primary-800">{ann.title}</h4>
+                      <p className="text-sm text-primary-700">
+                        {ann.content}{' '}
+                        <a href={ann.link} target="_blank" rel="noopener noreferrer" className="text-accent-yellow-600 font-semibold hover:underline">
+                           Learn more
+                        </a>
+                      </p>
+                    </div>
+                ))
+              )}
             </div>
           </div>
           <button onClick={() => setIsLearningHubOpen(true)} className="bg-white p-6 rounded-xl shadow-sm border border-cream-200 text-left hover:shadow-lg transition-shadow hover:-translate-y-1">

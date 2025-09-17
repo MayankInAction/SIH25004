@@ -11,7 +11,7 @@ export interface PhotoFile {
 }
 
 export interface AnimalData {
-  id: string;
+  id:string;
   species: Species;
   ageValue: string;
   ageUnit: AgeUnit;
@@ -61,12 +61,13 @@ export interface BreedInfo {
     name: string;
     species: Species;
     facts: string;
+    sources?: { uri: string; title: string }[];
 }
 
 export interface Announcement {
     id: string;
     title: string;
     content: string;
-    linkText: string;
+    link: string;
     tags: string[];
 }

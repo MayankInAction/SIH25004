@@ -1,4 +1,5 @@
-import { OwnerData, BreedInfo, Announcement } from './types';
+
+import { OwnerData, BreedInfo } from './types';
 import { INDIAN_STATES_AND_DISTRICTS } from './utils/locationData';
 
 // Updated with 53 Indigenous + 1 Synthetic as per ICAR-NBAGR data
@@ -21,7 +22,7 @@ export const ALL_BREEDS: BreedInfo[] = [
 // Sample facts for demonstration
 const sampleFacts: { [key: string]: string } = {
     "Sahiwal": "The Sahiwal is one of the best dairy breeds of zebu cattle, known for its high milk production and heat tolerance. It originated in the Sahiwal district of Punjab, Pakistan. They are generally docile and lethargic, making them easy to manage. Their milk is known for a high butterfat content.",
-    "Gir": "The Gir is a famous dairy cattle breed originating from the Gir hills of South Kathiawar in Gujarat. It is renowned for its milking prowess and tolerance to hot, stressful conditions. A key characteristic is their convex forehead, which acts as a cooling system for the brain and pituitary gland.",
+    "Gir": "The Gir is a famous dairy cattle breed originating from the Gir hills of South Kathiwar in Gujarat. It is renowned for its milking prowess and tolerance to hot, stressful conditions. A key characteristic is their convex forehead, which acts as a cooling system for the brain and pituitary gland.",
     "Murrah": "Murrah buffalo is a breed of water buffalo mainly found in the Indian states of Haryana and Punjab. It is kept for dairy production. The Murrah is known as the 'black gold' of India and is one of the most efficient milk producers in the world. They have tightly curled horns, a distinct feature of the breed.",
     "Tharparkar": "The Tharparkar is a dual-purpose breed, known for both its milking and draught capabilities. It originates from the Tharparkar District in Sindh province, now in Pakistan, and is also found in Rajasthan, India. They are very hardy and can thrive on poor-quality feed and under harsh environmental conditions."
 };
@@ -33,31 +34,6 @@ ALL_BREEDS.forEach(breed => {
     }
 });
 ALL_BREEDS.sort((a, b) => a.name.localeCompare(b.name));
-
-
-export const ANNOUNCEMENTS: Announcement[] = [
-    {
-        id: "ann1",
-        title: "New Subsidy for Gir Cattle Owners",
-        content: "The government has announced a new 40% subsidy on feed for registered owners of Gir cattle in Gujarat to boost milk production.",
-        linkText: "Learn more",
-        tags: ["Gir", "Subsidy", "Gujarat"]
-    },
-    {
-        id: "ann2",
-        title: "National Livestock Mission Update",
-        content: "The NLM portal has been updated with new guidelines for 2024-25. All field workers are advised to review the changes.",
-        linkText: "Read guidelines",
-        tags: ["National"]
-    },
-    {
-        id: "ann3",
-        title: "FMD Vaccination Drive in Haryana",
-        content: "A state-wide Foot-and-Mouth Disease (FMD) vaccination campaign will commence from next month for all cattle and buffaloes.",
-        linkText: "View schedule",
-        tags: ["Vaccination", "Haryana"]
-    }
-];
 
 export const INDIAN_STATES: string[] = Object.keys(INDIAN_STATES_AND_DISTRICTS).sort();
 

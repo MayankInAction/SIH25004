@@ -1,6 +1,5 @@
-
 import { GoogleGenAI, Type, GenerateContentResponse, Chat } from "@google/genai";
-import { Species, ChatMessage } from '../types';
+import { Species, ChatMessage, Announcement } from '../types';
 import { CATTLE_BREEDS, BUFFALO_BREEDS } from '../constants';
 
 const API_KEY = process.env.API_KEY;
@@ -148,6 +147,117 @@ export const detectAnimalDetails = async (image: { mimeType: string; data: strin
             species: null,
             gender: null,
         };
+    }
+};
+
+
+export const getBreedFacts = async (breedName: string, species: Species) => {
+    const prompt = `Provide detailed facts about the ${breedName} ${species} breed, focusing on its context within India. Include information on:
+-   Origin and native tract
+-   Physical characteristics (e.g., color, horns, build)
+-   Temperament and behavior
+-   Primary use (dairy, draught, dual-purpose)
+-   Milk yield potential or draught capabilities
+-   Special attributes or unique traits
+-   Climatic suitability`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                tools: [{ googleSearch: {} }],
+            },
+        });
+
+        const facts = response.text;
+        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+        
+        const sources = groundingChunks
+            .map(chunk => chunk.web)
+            .filter((web): web is { uri: string; title: string } => !!(web && web.uri));
+            
+        return {
+            facts,
+            sources,
+            error: null,
+        };
+
+    } catch (error) {
+        console.error("Error fetching breed facts with Google Search:", error);
+        return {
+            facts: "Could not retrieve detailed information for this breed at the moment. Please try again later.",
+            sources: [],
+            error: "Failed to communicate with the AI service.",
+        };
+    }
+};
+
+export const getAnnouncements = async (): Promise<Announcement[]> => {
+    const prompt = `
+    Find the 3 most recent and relevant official announcements, news articles, or policy updates for livestock owners and veterinary workers in India. 
+    Focus on topics like new government schemes, subsidies, disease outbreak warnings (like FMD, LSD), vaccination drives, or major policy changes from DAHD or ICAR.
+    Summarize your findings.
+    `;
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                tools: [{ googleSearch: {} }],
+            },
+        });
+
+        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+        
+        if (groundingChunks.length > 0) {
+            const announcements: Announcement[] = groundingChunks
+                .map(chunk => chunk.web)
+                .filter((web): web is { uri: string; title: string } => !!(web && web.uri && web.title))
+                .slice(0, 3) // Limit to top 3 relevant results
+                .map(web => ({
+                    id: web.uri,
+                    title: web.title,
+                    content: `Source: ${new URL(web.uri).hostname}. Click 'Learn more' for details.`,
+                    link: web.uri,
+                    tags: ['Live News']
+                }));
+            return announcements;
+        }
+
+        // Fallback to text if no sources are found
+        if (response.text) {
+             return [{
+                id: "gemini-response",
+                title: "Latest Livestock Information Update",
+                content: response.text,
+                link: "#",
+                tags: ["Summary"]
+            }];
+        }
+        
+        // Fallback if no data at all from search
+        return [
+            {
+                id: "err-no-data",
+                title: "No Announcements Found",
+                content: "Could not find any recent announcements at this time.",
+                link: "#",
+                tags: ["Info"]
+            }
+        ];
+
+    } catch (error) {
+        console.error("Error fetching announcements with Google Search:", error);
+        return [
+            {
+                id: "err1",
+                title: "Could Not Fetch Live Announcements",
+                content: "There was an issue connecting to the live news service. Please check your connection and try again later.",
+                link: "#",
+                tags: ["Error"]
+            }
+        ];
     }
 };
 
