@@ -45,15 +45,24 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ index, animalData, onUpd
             data: base64Data,
           });
 
-          if (!result.error && result.species && result.gender) {
+          if (result.error) {
+            console.warn('Auto-detection failed:', result.error);
+            alert(`Auto-detection could not be completed: ${result.error}`);
+          } else if (result.animals.length === 1) {
+            const detectedAnimal = result.animals[0];
             onUpdate(index, (prevData) => ({
               ...prevData,
-              species: result.species as Species,
-              gender: result.gender as Gender,
+              species: detectedAnimal.species as Species,
+              gender: detectedAnimal.gender as Gender,
             }));
+          } else if (result.animals.length > 1) {
+            alert('Multiple animals detected. For best results, please use a photo of a single animal to auto-fill details.');
+          } else { // 0 animals
+            console.log("No animals were automatically detected in the image.");
           }
         } catch (error) {
           console.error("Auto-detection failed:", error);
+          alert("An unexpected error occurred during auto-detection.");
         } finally {
           setIsDetecting(false);
         }

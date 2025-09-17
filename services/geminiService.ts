@@ -83,33 +83,43 @@ export const identifyBreed = async (images: { mimeType: string; data: string }[]
   }
 };
 
-const animalDetailSchema = {
+const animalDetailsSchema = {
     type: Type.OBJECT,
     properties: {
         error: {
             type: Type.STRING,
-            description: "Error message if detection fails (e.g., not an animal, unclear image). Set to 'null' as a string if successful.",
+            description: "Error message if detection fails (e.g., unclear image). Set to 'null' as a string if successful.",
         },
-        species: {
-            type: Type.STRING,
-            description: "The identified species. Must be either 'Cattle' or 'Buffalo'.",
-            enum: ['Cattle', 'Buffalo']
-        },
-        gender: {
-            type: Type.STRING,
-            description: "The identified gender. Must be either 'Male' or 'Female'.",
-            enum: ['Male', 'Female']
-        },
+        animals: {
+            type: Type.ARRAY,
+            description: "An array of all detected cattle or buffalo in the image.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    species: {
+                        type: Type.STRING,
+                        description: "The identified species. Must be either 'Cattle' or 'Buffalo'.",
+                        enum: ['Cattle', 'Buffalo']
+                    },
+                    gender: {
+                        type: Type.STRING,
+                        description: "The identified gender. Must be either 'Male' or 'Female'.",
+                        enum: ['Male', 'Female']
+                    },
+                },
+                required: ['species', 'gender']
+            }
+        }
     },
-    required: ['error', 'species', 'gender'],
+    required: ['error', 'animals'],
 };
 
 export const detectAnimalDetails = async (image: { mimeType: string; data: string }) => {
     const prompt = `
-    Analyze the attached image of a single animal.
-    1.  Identify the species. It must be one of: ['Cattle', 'Buffalo'].
-    2.  Identify the gender. It must be one of: ['Male', 'Female'].
-    3.  Assess if the image is clear enough for identification. If not, or if it's not a cow or buffalo, set the 'error' field.
+    Analyze the attached image to identify all instances of cattle and buffalo.
+    For each animal found, determine its species ('Cattle' or 'Buffalo') and gender ('Male' or 'Female').
+    - If the image is unclear or not of livestock, set the 'error' field.
+    - If no animals are found in a clear image, return an empty 'animals' array.
     
     Provide your response strictly in the specified JSON format. If no error, the 'error' field must be the string 'null'.
   `;
@@ -127,7 +137,7 @@ export const detectAnimalDetails = async (image: { mimeType: string; data: strin
             contents: { parts: [imagePart, { text: prompt }] },
             config: {
                 responseMimeType: "application/json",
-                responseSchema: animalDetailSchema,
+                responseSchema: animalDetailsSchema,
             },
         });
 
@@ -144,8 +154,7 @@ export const detectAnimalDetails = async (image: { mimeType: string; data: strin
         console.error("Error calling Gemini API for detail detection:", error);
         return {
             error: "Failed to auto-detect details from image.",
-            species: null,
-            gender: null,
+            animals: [],
         };
     }
 };
