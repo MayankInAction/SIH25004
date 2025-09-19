@@ -1,4 +1,5 @@
 
+
 import { OwnerData, BreedInfo } from './types';
 import { INDIAN_STATES_AND_DISTRICTS } from './utils/locationData';
 
@@ -41,13 +42,18 @@ export const INDIAN_STATES: string[] = Object.keys(INDIAN_STATES_AND_DISTRICTS).
 export const EMPTY_OWNER_DATA: OwnerData = {
     name: "",
     mobile: "",
-    aadhaar: "",
     dob: "",
-    gender: "Female",
+    gender: "",
     address: "",
     village: "",
     district: "",
     state: "",
+    pincode: "",
+    idType: "Aadhaar",
+    idNumber: "",
+    casteCategory: "",
+    bankAccount: "",
+    ifscCode: "",
 };
 
 export const ANALYSIS_MESSAGES: string[] = [

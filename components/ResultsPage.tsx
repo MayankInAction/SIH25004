@@ -93,8 +93,12 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
       <h2 className="text-xl font-bold text-primary-900 mb-4">Result for Animal #{index + 1} ({animal.species})</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <div className="mb-4 overflow-hidden rounded-lg aspect-video">
-            <img src={animal.photos[0].previewUrl} alt="Analyzed animal" className="w-full h-full object-cover" />
+          <div className="mb-4 overflow-hidden rounded-lg aspect-video bg-cream-100 flex items-center justify-center">
+            {animal.photos?.[0]?.previewUrl ? (
+                <img src={animal.photos[0].previewUrl} alt="Analyzed animal" className="w-full h-full object-cover" />
+            ) : (
+                 <Icon name="cow" className="w-24 h-24 text-gray-400" />
+            )}
           </div>
           {animal.aiResult.error ? (
             <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">

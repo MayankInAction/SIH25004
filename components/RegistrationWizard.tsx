@@ -1,5 +1,7 @@
+
+
 import React, { useState, useCallback, useEffect } from 'react';
-import { AnimalData, OwnerData, AnimalResult, Registration } from '../types';
+import { AnimalData, OwnerData, AnimalResult, Registration, Species } from '../types';
 import { AnimalForm } from './AnimalForm';
 import { OwnerForm } from './OwnerForm';
 import { ResultsPage } from './ResultsPage';
@@ -82,11 +84,10 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
 
   const createNewAnimal = (index: number): AnimalData => ({
     id: `animal-${Date.now()}-${index}`,
-    species: 'Cattle',
+    species: '',
     ageValue: '',
     ageUnit: 'Years',
-    gender: 'Female',
-    healthNotes: '',
+    sex: '',
     photos: [],
   });
 
@@ -108,7 +109,7 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
     if (newCount < currentCount) {
         const animalsToBeRemoved = animals.slice(newCount);
         const hasData = animalsToBeRemoved.some(
-            animal => animal.photos.length > 0 || animal.ageValue.trim() !== '' || animal.healthNotes.trim() !== ''
+            animal => animal.photos.length > 0 || animal.ageValue.trim() !== ''
         );
         
         if (hasData) {
@@ -140,14 +141,39 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
   }, []);
 
   const handleAnimalDetailsSubmit = () => {
-    for (const animal of animals) {
+    for (const [index, animal] of animals.entries()) {
         if (animal.photos.length === 0) {
-            alert(`Please upload at least one photo for each animal.`);
+            alert(`Please upload at least one photo for animal #${index + 1}.`);
+            return;
+        }
+        if (!animal.species) {
+            alert(`Please select a species for animal #${index + 1}.`);
+            return;
+        }
+        if (!animal.sex) {
+            alert(`Please select a sex for animal #${index + 1}.`);
             return;
         }
         if (animal.ageValue.trim() === '') {
-            alert(`Please enter the age for each animal.`);
+            alert(`Please enter the age for animal #${index + 1}.`);
             return;
+        }
+        const age = parseFloat(animal.ageValue);
+        if (isNaN(age)) {
+            alert(`Invalid age for Animal #${index + 1}. Age must be a number.`);
+            return;
+        }
+
+        if (animal.ageUnit === 'Years') {
+            if (age < 0 || age > 20) {
+                alert(`Invalid age for Animal #${index + 1}. Age must be between 0 and 20 years.`);
+                return;
+            }
+        } else { // 'Months'
+            if (age < 6 || age > 12) {
+                alert(`Invalid age for Animal #${index + 1}. Age must be between 6 and 12 months for young animals.`);
+                return;
+            }
         }
     }
 
@@ -165,7 +191,8 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
               data: await toBase64(p.file),
             }))
           );
-          const aiResult = await identifyBreed(imagePayload, animal.species);
+          // FIX: Cast `animal.species` to `Species` as it has been validated in the loop above.
+          const aiResult = await identifyBreed(imagePayload, animal.species as Species);
           return { ...animal, aiResult };
         })
       );
@@ -261,7 +288,8 @@ export const RegistrationWizard: React.FC<RegistrationWizardProps> = ({ onBackTo
 };
 
 const AnimalCountStep: React.FC<{ onSubmit: (count: number) => void, onBack: () => void, initialCount: number }> = ({ onSubmit, onBack, initialCount }) => {
-  const [count, setCount] = useState(initialCount);
+  // Allow string for temporary empty input state
+  const [count, setCount] = useState<number | ''>(initialCount);
   
   useEffect(() => {
     setCount(initialCount);
@@ -269,12 +297,52 @@ const AnimalCountStep: React.FC<{ onSubmit: (count: number) => void, onBack: () 
 
   const adjustCount = (amount: number) => {
     setCount(prev => {
-        const newCount = prev + amount;
+        const currentVal = Number(prev) || 1; // Default to 1 if empty
+        const newCount = currentVal + amount;
         if (newCount >= 1 && newCount <= 50) {
             return newCount;
         }
         return prev;
     });
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      
+      if (value === '') {
+          setCount('');
+          return;
+      }
+
+      // Only allow digits
+      if (/^\d*$/.test(value)) {
+          let num = parseInt(value, 10);
+          if (!isNaN(num)) {
+              if (num > 50) num = 50; // Clamp at upper bound
+              if (num < 1) { 
+                // Don't set 0, allow user to clear the field which is handled above
+              } else {
+                setCount(num);
+              }
+          }
+      }
+  };
+
+  const handleBlur = () => {
+      let value = Number(count);
+      if (isNaN(value) || value < 1) {
+          setCount(1); // Set to min on blur if invalid or below min
+      }
+  };
+
+  const handleSubmit = () => {
+    const finalCount = Number(count);
+    if (finalCount >= 1 && finalCount <= 50) {
+        onSubmit(finalCount);
+    } else {
+        // Fallback for invalid state, though onBlur should prevent this
+        onSubmit(1);
+    }
   };
 
   return (
@@ -285,16 +353,27 @@ const AnimalCountStep: React.FC<{ onSubmit: (count: number) => void, onBack: () 
       <div className="flex items-center justify-center space-x-4 my-8">
         <button 
           onClick={() => adjustCount(-1)} 
-          disabled={count <= 1}
+          disabled={Number(count) <= 1}
           className="w-16 h-16 bg-cream-100 text-primary-700 rounded-full text-4xl font-light flex items-center justify-center hover:bg-cream-200 disabled:bg-cream-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-transform duration-150 active:scale-95"
           aria-label="Decrease animal count"
         >
           -
         </button>
-        <span className="text-7xl font-bold text-primary-900 w-28 text-center tabular-nums">{count}</span>
+
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="\d*"
+          value={count}
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          className="text-7xl font-bold text-primary-900 w-28 text-center bg-transparent border-none focus:ring-0 p-0 tabular-nums appearance-none"
+          aria-label="Number of animals"
+        />
+
         <button 
           onClick={() => adjustCount(1)}
-          disabled={count >= 50}
+          disabled={Number(count) >= 50}
           className="w-16 h-16 bg-cream-100 text-primary-700 rounded-full text-4xl font-light flex items-center justify-center hover:bg-cream-200 disabled:bg-cream-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-transform duration-150 active:scale-95"
           aria-label="Increase animal count"
         >
@@ -305,7 +384,7 @@ const AnimalCountStep: React.FC<{ onSubmit: (count: number) => void, onBack: () 
       <p className="text-sm text-gray-500 mb-8 -mt-4">For performance, you can register up to 50 animals in a single batch.</p>
       <div className="flex justify-center space-x-4">
         <button onClick={onBack} className="px-6 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 transition-transform duration-150 active:scale-95">Back</button>
-        <button onClick={() => onSubmit(count)} className="px-8 py-2 bg-accent-500 text-white font-semibold rounded-md hover:bg-accent-600 shadow-sm transition-transform duration-150 active:scale-95">Next</button>
+        <button onClick={handleSubmit} className="px-8 py-2 bg-accent-500 text-white font-semibold rounded-md hover:bg-accent-600 shadow-sm transition-transform duration-150 active:scale-95">Next</button>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Icon } from './icons';
 
@@ -47,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, showSearch }) => {
                     id="search"
                     name="search"
                     className="block w-full bg-primary-800 border border-primary-700 rounded-md py-2 pl-10 pr-3 text-sm placeholder-gray-300 text-white focus:outline-none focus:placeholder-gray-200 focus:ring-1 focus:ring-accent-400 focus:border-accent-400 sm:text-sm"
-                    placeholder="Search by Aadhaar, Owner..."
+                    placeholder="Search by Owner Name or ID..."
                     type="search"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -63,6 +64,9 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, showSearch }) => {
               <span className="text-sm text-gray-300 font-mono tracking-wider hidden sm:block">
                 {currentTime.toLocaleTimeString()}
               </span>
+              <button className="p-2 rounded-full text-cream-100 hover:bg-primary-800 hover:text-white transition-colors">
+                  <Icon name="bell" className="w-6 h-6"/>
+              </button>
               <button className="p-2 rounded-full text-cream-100 hover:bg-primary-800 hover:text-white transition-colors">
                   <Icon name="user-circle" className="w-6 h-6"/>
               </button>

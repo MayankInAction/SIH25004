@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, GenerateContentResponse, Chat } from "@google/genai";
-import { Species, ChatMessage, Announcement } from '../types';
+import { Species, ChatMessage } from '../types';
 import { CATTLE_BREEDS, BUFFALO_BREEDS } from '../constants';
 
 const API_KEY = process.env.API_KEY;
@@ -101,13 +101,13 @@ const animalDetailsSchema = {
                         description: "The identified species. Must be either 'Cattle' or 'Buffalo'.",
                         enum: ['Cattle', 'Buffalo']
                     },
-                    gender: {
+                    sex: {
                         type: Type.STRING,
-                        description: "The identified gender. Must be either 'Male' or 'Female'.",
+                        description: "The identified sex. Must be either 'Male' or 'Female'.",
                         enum: ['Male', 'Female']
                     },
                 },
-                required: ['species', 'gender']
+                required: ['species', 'sex']
             }
         }
     },
@@ -117,8 +117,13 @@ const animalDetailsSchema = {
 export const detectAnimalDetails = async (image: { mimeType: string; data: string }) => {
     const prompt = `
     Analyze the attached image to identify all instances of cattle and buffalo.
-    For each animal found, determine its species ('Cattle' or 'Buffalo') and gender ('Male' or 'Female').
-    - If the image is unclear or not of livestock, set the 'error' field.
+    For each animal found, determine its species ('Cattle' or 'Buffalo') and sex ('Male' or 'Female').
+
+    To improve sex accuracy, look for these features:
+    - **For 'Male'**: Look for the presence of a preputial sheath (pizzle) under the belly, a more pronounced hump (in Zebu cattle), and a generally more muscular build, especially in the neck and shoulders. The absence of a developed udder is a strong indicator.
+    - **For 'Female'**: Look for the presence of an udder and teats between the hind legs. If the animal is young (a heifer), the udder may be small, but it should still be distinguishable.
+
+    - If the image is unclear, obstructed, or the key sex features are not visible, set the 'error' field.
     - If no animals are found in a clear image, return an empty 'animals' array.
     
     Provide your response strictly in the specified JSON format. If no error, the 'error' field must be the string 'null'.
@@ -202,75 +207,6 @@ export const getBreedFacts = async (breedName: string, species: Species) => {
     }
 };
 
-export const getAnnouncements = async (): Promise<Announcement[]> => {
-    const prompt = `
-    Find the 3 most recent and relevant official announcements, news articles, or policy updates for livestock owners and veterinary workers in India. 
-    Focus on topics like new government schemes, subsidies, disease outbreak warnings (like FMD, LSD), vaccination drives, or major policy changes from DAHD or ICAR.
-    Summarize your findings.
-    `;
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                tools: [{ googleSearch: {} }],
-            },
-        });
-
-        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
-        
-        if (groundingChunks.length > 0) {
-            const announcements: Announcement[] = groundingChunks
-                .map(chunk => chunk.web)
-                .filter((web): web is { uri: string; title: string } => !!(web && web.uri && web.title))
-                .slice(0, 3) // Limit to top 3 relevant results
-                .map(web => ({
-                    id: web.uri,
-                    title: web.title,
-                    content: `Source: ${new URL(web.uri).hostname}. Click 'Learn more' for details.`,
-                    link: web.uri,
-                    tags: ['Live News']
-                }));
-            return announcements;
-        }
-
-        // Fallback to text if no sources are found
-        if (response.text) {
-             return [{
-                id: "gemini-response",
-                title: "Latest Livestock Information Update",
-                content: response.text,
-                link: "#",
-                tags: ["Summary"]
-            }];
-        }
-        
-        // Fallback if no data at all from search
-        return [
-            {
-                id: "err-no-data",
-                title: "No Announcements Found",
-                content: "Could not find any recent announcements at this time.",
-                link: "#",
-                tags: ["Info"]
-            }
-        ];
-
-    } catch (error) {
-        console.error("Error fetching announcements with Google Search:", error);
-        return [
-            {
-                id: "err1",
-                title: "Could Not Fetch Live Announcements",
-                content: "There was an issue connecting to the live news service. Please check your connection and try again later.",
-                link: "#",
-                tags: ["Error"]
-            }
-        ];
-    }
-};
-
-
 export const startChat = (breedName: string) => {
     breedChatInstance = ai.chats.create({
         model: 'gemini-2.5-flash',
@@ -301,7 +237,7 @@ export const startGeneralChat = () => {
         generalChatInstance = ai.chats.create({
             model: 'gemini-2.5-flash',
             config: {
-                systemInstruction: `You are पशुHelper, a friendly and knowledgeable AI assistant for veterinary field workers in India. Your expertise covers all recognized Indian cattle and buffalo breeds. Provide clear, practical, and concise answers. When asked for advice, prioritize animal welfare and standard veterinary practices.`,
+                systemInstruction: `You are पशुHelper, a friendly and knowledgeable AI assistant for veterinary field workers in India. Your expertise covers two main areas: 1. **Indian Livestock:** You can answer questions about all recognized Indian cattle and buffalo breeds, including their care, productivity, and health. 2. **The PashuVision App:** You are an expert on this application. You can guide users on how to use the app, including how to perform new registrations, view history, understand the dashboard, use the AI for breed identification, and update records. Always provide clear, practical, and concise answers, prioritizing animal welfare and standard veterinary practices when applicable.`,
             },
         });
     }

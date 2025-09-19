@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Icon } from './icons';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Registration, ChatMessage, BreedInfo, Announcement } from '../types';
-import { startGeneralChat, sendMessageToGeneralChat, getBreedFacts, getAnnouncements } from '../services/geminiService';
+import { Registration, ChatMessage, BreedInfo } from '../types';
+import { startGeneralChat, sendMessageToGeneralChat, getBreedFacts } from '../services/geminiService';
 import { ALL_BREEDS } from '../constants';
 import { UpdateRecordModal } from './UpdateRecordModal';
+import { getSampleRegistrations } from '../utils/dataGenerator';
 
 
 const GeneralChatbot: React.FC = () => {
@@ -43,10 +45,18 @@ const GeneralChatbot: React.FC = () => {
     <>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 bg-secondary-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center hover:bg-secondary-700 transition-transform hover:scale-110 active:scale-100 z-50"
-        aria-label="Open AI Assistant"
+        className={`fixed bottom-6 right-6 bg-secondary-600 text-white shadow-lg flex items-center justify-center hover:bg-secondary-700 transition-all duration-300 ease-in-out z-50
+          ${isOpen ? 'w-16 h-16 rounded-full' : 'w-auto h-14 px-6 rounded-full'}`}
+        aria-label={isOpen ? "Close AI Assistant" : "Open AI Assistant"}
       >
-        <Icon name={isOpen ? 'close' : 'help-circle'} className="w-8 h-8"/>
+        {isOpen ? (
+           <Icon name="close" className="w-8 h-8"/>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Icon name="chat-bubble" className="w-6 h-6"/>
+            <span className="font-semibold text-base whitespace-nowrap">AI Assistant</span>
+          </div>
+        )}
       </button>
 
       <div className={`fixed bottom-24 right-6 w-full max-w-sm bg-cream-50 rounded-2xl shadow-2xl border border-cream-200 transition-all duration-300 ease-in-out z-40 origin-bottom-right ${isOpen ? 'transform scale-100 opacity-100' : 'transform scale-95 opacity-0 pointer-events-none'}`}>
@@ -221,17 +231,104 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
 };
 
 
-const StatCard: React.FC<{title: string, value: string | number, icon: React.ReactElement}> = ({title, value, icon}) => (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-cream-200 flex items-center">
-        <div className="p-3 rounded-full bg-primary-100 text-primary-700 mr-4">
-            {icon}
+const StatCard: React.FC<{title: string, value: string | number, icon: React.ReactElement}> = ({title, value, icon}) => {
+    const isNumber = typeof value === 'number';
+    // Initialize with 0 for numbers to start animation from, or the string value itself.
+    const [displayValue, setDisplayValue] = useState(isNumber ? 0 : value);
+
+    useEffect(() => {
+        if (!isNumber) {
+            // If the value is not a number, just update it directly.
+            setDisplayValue(value);
+            return;
+        }
+
+        const endValue = value as number;
+        const duration = 1000; // 1 second animation
+        let startTime: number | null = null;
+        let animationFrameId: number;
+
+        const animate = (timestamp: number) => {
+            if (!startTime) {
+                startTime = timestamp;
+            }
+            const elapsed = timestamp - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const currentNumber = Math.floor(progress * endValue);
+            
+            setDisplayValue(currentNumber);
+
+            if (progress < 1) {
+                animationFrameId = requestAnimationFrame(animate);
+            }
+        };
+
+        animationFrameId = requestAnimationFrame(animate);
+
+        return () => {
+            cancelAnimationFrame(animationFrameId);
+        };
+    }, [value, isNumber]);
+
+    return (
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-cream-200 flex items-center">
+            <div className="p-3 rounded-full bg-primary-100 text-primary-700 mr-4">
+                {icon}
+            </div>
+            <div>
+                <p className="text-sm font-medium text-primary-700">{title}</p>
+                {/* Use tabular-nums to prevent layout shift during animation */}
+                <p className="text-2xl font-bold text-primary-900 tabular-nums">{displayValue}</p>
+            </div>
         </div>
-        <div>
-            <p className="text-sm font-medium text-primary-700">{title}</p>
-            <p className="text-2xl font-bold text-primary-900">{value}</p>
+    );
+};
+
+const ActivityStatCard: React.FC<{period: string, count: number, iconName: 'calendar-days' | 'calendar-week' | 'calendar'}> = ({period, count, iconName}) => {
+    const [displayCount, setDisplayCount] = useState(0);
+
+    useEffect(() => {
+        const endValue = count;
+        const duration = 1000; // 1 second animation
+        let startTime: number | null = null;
+        let animationFrameId: number;
+
+        const animate = (timestamp: number) => {
+            if (!startTime) {
+                startTime = timestamp;
+            }
+            const elapsed = timestamp - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const currentNumber = Math.floor(progress * endValue);
+            
+            setDisplayCount(currentNumber);
+
+            if (progress < 1) {
+                animationFrameId = requestAnimationFrame(animate);
+            }
+        };
+
+        animationFrameId = requestAnimationFrame(animate);
+
+        return () => {
+            cancelAnimationFrame(animationFrameId);
+        };
+    }, [count]);
+
+    return (
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-cream-200 flex items-start">
+            <div className="p-3 rounded-lg bg-secondary-100 text-secondary-700 mr-4">
+                <Icon name={iconName} className="w-6 h-6" />
+            </div>
+            <div>
+                <p className="text-sm font-medium text-primary-700">{period}</p>
+                <p className="text-3xl font-bold text-primary-900 tabular-nums">{displayCount}</p>
+                <p className="text-xs text-primary-600 -mt-1">Registrations</p>
+            </div>
         </div>
-    </div>
-);
+    );
+};
+
 
 const QuickActionCard: React.FC<{ title: string; description: string; iconName: 'ai-sparkles' | 'history' | 'chart' | 'pencil-square'; onClick: () => void; accent: 'green' | 'teal' | 'yellow' | 'green-dark' }> = ({ title, description, iconName, onClick, accent }) => {
     const accents = {
@@ -273,8 +370,12 @@ const RegistrationCarouselItem: React.FC<{registration: Registration, onClick: (
 
     return (
         <button onClick={onClick} className="flex-shrink-0 w-64 bg-white rounded-xl shadow-sm border border-cream-200 p-3 text-left hover:shadow-md transition-shadow active:scale-[0.98]">
-            <div className="w-full h-32 bg-cream-100 rounded-lg overflow-hidden mb-3">
-                 <img src={firstAnimal?.photos[0]?.previewUrl} alt="Animal" className="w-full h-full object-cover"/>
+            <div className="w-full h-32 bg-cream-100 rounded-lg overflow-hidden mb-3 flex items-center justify-center">
+                 {firstAnimal?.photos?.[0]?.previewUrl ? (
+                    <img src={firstAnimal.photos[0].previewUrl} alt="Animal" className="w-full h-full object-cover"/>
+                 ) : (
+                    <Icon name="cow" className="w-16 h-16 text-gray-400" />
+                 )}
             </div>
             <p className="font-bold text-primary-900 truncate">{firstAnimal?.aiResult?.breedName || 'Unknown Breed'}</p>
             <p className="text-sm text-primary-700 truncate">{registration.owner.name}</p>
@@ -292,23 +393,79 @@ export const Dashboard: React.FC<{
   onViewRegistration: (registration: Registration) => void;
   onEditRegistration: (registration: Registration) => void;
 }> = ({ onNavigate, onViewRegistration, onEditRegistration }) => {
-  const [registrations] = useLocalStorage<Registration[]>('registrations', []);
+  const [registrations, setRegistrations] = useLocalStorage<Registration[]>('registrations', []);
   const [isLearningHubOpen, setIsLearningHubOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const fetchAnnouncements = async () => {
-      setIsLoadingAnnouncements(true);
-      const data = await getAnnouncements();
-      setAnnouncements(data);
-      setIsLoadingAnnouncements(false);
-    };
-    fetchAnnouncements();
+    const storedRegistrations = localStorage.getItem('registrations');
+    if (!storedRegistrations || JSON.parse(storedRegistrations).length === 0) {
+        setRegistrations(getSampleRegistrations());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { totalAnimals, mostCommonBreed } = useMemo(() => {
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleExportCSV = () => {
+    if (registrations.length === 0) return;
+
+    const headers = [
+        'Registration ID', 'Timestamp', 'Owner Name', 'Owner Mobile', 'Owner ID Type', 'Owner ID Number', 'Owner State', 'Owner District', 'Owner Village',
+        'Animal UID', 'Species', 'Sex', 'Age', 'Breed Name', 'Confidence', 'AI Analysis Status', 'AI Reasoning', 'Milk Yield Potential', 'Care Notes', 'AI Error'
+    ];
+
+    const escapeCSV = (value: any) => {
+        const str = String(value ?? '');
+        if (/[",\n\r]/.test(str)) {
+            return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+    };
+
+    const rows = registrations.flatMap(reg => 
+        reg.animals.map(animal => [
+            reg.id,
+            reg.timestamp,
+            reg.owner.name,
+            reg.owner.mobile,
+            reg.owner.idType,
+            reg.owner.idNumber,
+            reg.owner.state,
+            reg.owner.district,
+            reg.owner.village,
+            animal.id,
+            animal.species,
+            animal.sex,
+            `${animal.ageValue} ${animal.ageUnit}`,
+            animal.aiResult.breedName,
+            animal.aiResult.confidence,
+            animal.aiResult.error ? 'Failed' : 'Success',
+            animal.aiResult.reasoning,
+            animal.aiResult.milkYieldPotential,
+            animal.aiResult.careNotes,
+            animal.aiResult.error || ''
+        ].map(escapeCSV).join(','))
+    );
+
+    const csvContent = [headers.join(','), ...rows].join('\r\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "pashuvision_registrations.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const { totalAnimals, mostCommonBreed, sortedRegistrations } = useMemo(() => {
     const breedCounts: { [key:string]: number } = {};
     let animalCount = 0;
     
@@ -326,24 +483,85 @@ export const Dashboard: React.FC<{
     
     return {
         totalAnimals: animalCount,
-        mostCommonBreed: sortedBreeds[0]?.[0] || 'N/A'
+        mostCommonBreed: sortedBreeds[0]?.[0] || 'N/A',
+        sortedRegistrations: registrations.slice().sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
     };
+  }, [registrations]);
+  
+  const recentUserRegistrations = useMemo(() => 
+    sortedRegistrations.filter(reg => !reg.isSample), 
+  [sortedRegistrations]);
+  
+  const activityStats = useMemo(() => {
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      const dayOfWeek = now.getDay(); // 0 = Sunday
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
+      startOfWeek.setHours(0,0,0,0);
+
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      let todayCount = 0;
+      let weekCount = 0;
+      let monthCount = 0;
+
+      registrations.forEach(reg => {
+          const regDate = new Date(reg.timestamp);
+          if (regDate >= startOfToday) {
+              todayCount++;
+          }
+          if (regDate >= startOfWeek) {
+              weekCount++;
+          }
+          if (regDate >= startOfMonth) {
+              monthCount++;
+          }
+      });
+
+      return { todayCount, weekCount, monthCount };
   }, [registrations]);
 
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-primary-900">Welcome to पशुVision</h1>
-        <p className="text-primary-700 mt-1">Your AI-powered assistant for accurate livestock management.</p>
-        <p className="text-xs text-primary-600 mt-2 font-semibold">In association with the Ministry of Fisheries, Animal Husbandry & Dairying</p>
+       <div className="relative bg-gradient-to-br from-primary-900 to-primary-800 text-white p-8 rounded-2xl shadow-xl overflow-hidden">
+        <div className="absolute -top-10 -right-10 text-primary-700 opacity-20">
+            <span className="text-9xl">🐮</span>
+        </div>
+        <div className={`transition-all duration-700 ease-out ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight">
+            Welcome to <span className="text-accent-400">पशुVision</span>
+          </h1>
+        </div>
+        <div className={`transition-all duration-700 ease-out delay-200 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <p className="text-primary-200 mt-2 text-lg">
+            Your AI-powered assistant for accurate livestock management.
+          </p>
+        </div>
+        <div className={`transition-all duration-700 ease-out delay-300 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <p className="text-sm text-primary-300 mt-4 pt-4 border-t border-primary-700/50">
+            In association with the <strong>Ministry of Fisheries, Animal Husbandry & Dairying</strong>
+          </p>
+        </div>
       </div>
+
 
       {/* At-a-glance Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <StatCard title="Total Animals Registered" value={totalAnimals} icon={<Icon name="cow" className="w-6 h-6" />} />
           <StatCard title="Total Registrations" value={registrations.length} icon={<Icon name="history" className="w-6 h-6" />} />
           <StatCard title="Most Common Breed" value={mostCommonBreed} icon={<Icon name="ai-sparkles" className="w-6 h-6" />} />
+      </div>
+
+      {/* Registration Activity */}
+      <div>
+        <h3 className="text-xl font-bold text-primary-900 mb-4">Recent Activity</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <ActivityStatCard period="Today" count={activityStats.todayCount} iconName="calendar-days" />
+            <ActivityStatCard period="This Week" count={activityStats.weekCount} iconName="calendar-week" />
+            <ActivityStatCard period="This Month" count={activityStats.monthCount} iconName="calendar" />
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -357,49 +575,88 @@ export const Dashboard: React.FC<{
       {/* Recent Registrations Carousel */}
        <div>
         <h3 className="text-xl font-bold text-primary-900 mb-4">Recent Registrations</h3>
-         {registrations.length > 0 ? (
+         {recentUserRegistrations.length > 0 ? (
             <div className="flex space-x-4 overflow-x-auto pb-4 -mb-4">
-              {registrations
-                .slice()
-                .sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                .map((reg) => (
+              {recentUserRegistrations.map((reg) => (
                   <RegistrationCarouselItem key={reg.id} registration={reg} onClick={() => onViewRegistration(reg)} />
               ))}
             </div>
          ) : (
             <div className="text-center py-10 bg-white rounded-xl border-2 border-dashed border-cream-200">
-                <p className="text-primary-700">No registrations yet — Start one to see it appear here! 🐮</p>
+                <p className="text-primary-700">No new registrations yet — Start one to see it appear here! 🐮</p>
             </div>
          )}
       </div>
-
-      {/* What's New & Learning Hub */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-cream-200">
-            <h3 className="font-bold text-primary-900 mb-4 flex items-center gap-2"><Icon name="megaphone" className="w-5 h-5 text-accent-yellow-600"/>Announcements</h3>
-            <div className="space-y-4">
-              {isLoadingAnnouncements ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-full"></div>
-                  </div>
-                ))
-              ) : (
-                announcements.map(ann => (
-                    <div key={ann.id}>
-                      <h4 className="font-semibold text-primary-800">{ann.title}</h4>
-                      <p className="text-sm text-primary-700">
-                        {ann.content}{' '}
-                        <a href={ann.link} target="_blank" rel="noopener noreferrer" className="text-accent-yellow-600 font-semibold hover:underline">
-                           Learn more
-                        </a>
-                      </p>
-                    </div>
-                ))
-              )}
-            </div>
+      
+      {/* Registration Database Table */}
+      <div>
+          <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-primary-900">Registration Database</h3>
+              <button onClick={handleExportCSV} disabled={registrations.length === 0} className="flex items-center gap-2 px-4 py-2 bg-primary-800 text-white rounded-md text-sm font-semibold hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors">
+                  <Icon name="upload" className="w-4 h-4" />
+                  Export to CSV
+              </button>
           </div>
+          <div className="bg-white rounded-xl shadow-sm border border-cream-200 overflow-hidden">
+              <div className="overflow-x-auto max-h-[450px]">
+                  <table className="w-full text-sm text-left text-primary-800">
+                      <thead className="text-xs text-primary-700 uppercase bg-cream-100 sticky top-0 z-10">
+                          <tr>
+                              <th scope="col" className="px-6 py-3">Date</th>
+                              <th scope="col" className="px-6 py-3">Owner Name</th>
+                              <th scope="col" className="px-6 py-3">Location</th>
+                              <th scope="col" className="px-6 py-3">Breeds Identified</th>
+                              <th scope="col" className="px-6 py-3">Status</th>
+                              <th scope="col" className="px-6 py-3 text-right">Actions</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          {sortedRegistrations.map(reg => {
+                              const successCount = reg.animals.filter(a => !a.aiResult.error).length;
+                              const totalCount = reg.animals.length;
+                              let status, statusColor;
+                              if (successCount === totalCount) {
+                                  status = 'Success';
+                                  statusColor = 'bg-green-100 text-green-800';
+                              } else if (successCount > 0) {
+                                  status = 'Partial';
+                                  statusColor = 'bg-yellow-100 text-yellow-800';
+                              } else {
+                                  status = 'Failed';
+                                  statusColor = 'bg-red-100 text-red-800';
+                              }
+
+                              const breeds = reg.animals
+                                  .map(a => a.aiResult.error ? null : a.aiResult.breedName)
+                                  .filter(Boolean)
+                                  .join(', ');
+
+                              return (
+                                  <tr key={reg.id} className="bg-white border-b border-cream-200 last:border-b-0 hover:bg-cream-50">
+                                      <td className="px-6 py-4 font-medium text-primary-900 whitespace-nowrap">{new Date(reg.timestamp).toLocaleDateString()}</td>
+                                      <td className="px-6 py-4">{reg.owner.name}</td>
+                                      <td className="px-6 py-4">{`${reg.owner.district}, ${reg.owner.state}`}</td>
+                                      <td className="px-6 py-4">{breeds || 'N/A'}</td>
+                                      <td className="px-6 py-4">
+                                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColor}`}>{status}</span>
+                                      </td>
+                                      <td className="px-6 py-4 text-right">
+                                          <button onClick={() => onViewRegistration(reg)} className="font-medium text-accent-600 hover:underline">View</button>
+                                      </td>
+                                  </tr>
+                              );
+                          })}
+                      </tbody>
+                  </table>
+              </div>
+               {registrations.length === 0 && (
+                  <div className="text-center p-8 text-primary-700">No registrations to display.</div>
+              )}
+          </div>
+      </div>
+
+      {/* Learning Hub */}
+      <div className="grid grid-cols-1 gap-6">
           <button onClick={() => setIsLearningHubOpen(true)} className="bg-white p-6 rounded-xl shadow-sm border border-cream-200 text-left hover:shadow-lg transition-shadow hover:-translate-y-1">
             <h3 className="font-bold text-primary-900 mb-2 flex items-center gap-2"><Icon name="book-open" className="w-5 h-5 text-accent-yellow-600"/>Breed Learning Hub</h3>
             <p className="text-sm text-primary-700">Explore facts and information about all 74 officially recognized breeds of cattle and buffalo in India. Use the search to quickly find a specific breed.</p>

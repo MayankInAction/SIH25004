@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>पशुVision</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         theme: {
@@ -73,6 +76,15 @@
                 950: '#431407',
               }
             },
+            animation: {
+              'scan-line': 'scan 2.5s ease-in-out infinite',
+            },
+            keyframes: {
+              scan: {
+                '0%, 100%': { top: '0%' },
+                '50%': { top: 'calc(100% - 2px)' },
+              }
+            }
           },
         },
       }

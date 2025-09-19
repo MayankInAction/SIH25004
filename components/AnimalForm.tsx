@@ -1,5 +1,6 @@
+
 import React, { useCallback, useState, useRef } from 'react';
-import { AnimalData, Species, Gender } from '../types';
+import { AnimalData, Species, PhotoFile } from '../types';
 import { Icon } from './icons';
 import { toBase64 } from '../utils/fileUtils';
 import { detectAnimalDetails } from '../services/geminiService';
@@ -15,9 +16,39 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ index, animalData, onUpd
   const [isDetecting, setIsDetecting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [ageError, setAgeError] = useState<string | null>(null);
     
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+
+    const validateAge = (val: string, unit: string) => {
+        if (val.trim() === '') {
+            setAgeError(null);
+            return;
+        }
+
+        const age = Number(val);
+        if (unit === 'Years') {
+            if (age < 0 || age > 20) {
+                setAgeError('Age in years must be between 0 and 20.');
+            } else {
+                setAgeError(null);
+            }
+        } else { // Months
+            if (age < 6 || age > 12) {
+                setAgeError('Age in months must be between 6 and 12 for young animals.');
+            } else {
+                setAgeError(null);
+            }
+        }
+    };
+
+    if (name === 'ageValue') {
+        validateAge(value, animalData.ageUnit);
+    } else if (name === 'ageUnit') {
+        validateAge(animalData.ageValue, value);
+    }
+
     onUpdate(index, (prevData) => ({ ...prevData, [name]: value }));
   };
   
@@ -53,7 +84,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ index, animalData, onUpd
             onUpdate(index, (prevData) => ({
               ...prevData,
               species: detectedAnimal.species as Species,
-              gender: detectedAnimal.gender as Gender,
+              sex: detectedAnimal.sex as 'Male' | 'Female',
             }));
           } else if (result.animals.length > 1) {
             alert('Multiple animals detected. For best results, please use a photo of a single animal to auto-fill details.');
@@ -78,8 +109,10 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ index, animalData, onUpd
     e.target.value = '';
   }, [addPhotosAndDetect]);
   
+  // FIX: Close camera modal after a photo is captured.
   const handleCapture = useCallback((file: File) => {
       addPhotosAndDetect([file]);
+      setIsCameraOpen(false);
   }, [addPhotosAndDetect]);
 
   const removePhoto = (id: string) => {
@@ -92,60 +125,72 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ index, animalData, onUpd
   return (
     <>
       <div className="bg-white p-6 rounded-xl shadow-sm border border-cream-200">
-        <h3 className="text-xl font-bold mb-4 text-primary-900">Animal #{index + 1}</h3>
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <div className="lg:col-span-3">
+        <h3 className="text-xl font-bold mb-6 text-primary-900">Animal #{index + 1}</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Photo Upload Section */}
+            <div className="lg:col-span-5">
                 <label className="block text-sm font-medium text-primary-800 mb-2">Photos (1-5 Required)</label>
-                <div className="bg-cream-50 p-4 rounded-lg border-2 border-dashed border-cream-200 min-h-[200px] flex flex-col justify-center">
-                    {animalData.photos.length > 0 ? (
-                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
-                            {animalData.photos.map(photo => (
-                                <div key={photo.id} className="relative group aspect-square">
-                                    <img src={photo.previewUrl} alt="Animal preview" className="w-full h-full object-cover rounded-md" />
-                                    <button onClick={() => removePhoto(photo.id)} className="absolute top-1 right-1 bg-red-600/80 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 focus:opacity-100">
-                                        <Icon name="trash" className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                         <div className="text-center text-gray-500">
-                            <Icon name="camera" className="mx-auto w-12 h-12 text-gray-400"/>
-                            <p className="mt-2 text-sm">Upload or capture photos of the animal.</p>
-                        </div>
-                    )}
-
-                    {animalData.photos.length < 5 && (
-                         <div className="flex items-center justify-center gap-4 mt-4">
+                
+                {animalData.photos.length === 0 ? (
+                    <div className="bg-cream-50 p-4 rounded-lg border-2 border-dashed border-cream-200 aspect-video flex flex-col justify-center items-center text-center">
+                        <Icon name="camera" className="mx-auto w-12 h-12 text-gray-400"/>
+                        <p className="mt-2 text-sm text-gray-500">Upload or capture photos.</p>
+                        <div className="flex items-center justify-center gap-4 mt-4">
                             <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-semibold text-primary-800 hover:bg-gray-100">
-                                <Icon name="upload" className="w-5 h-5"/>
-                                Upload File
+                                <Icon name="upload" className="w-5 h-5"/> Upload
                             </button>
                             <button type="button" onClick={() => setIsCameraOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary-900 border border-transparent rounded-md text-sm font-semibold text-white hover:bg-primary-800">
-                                 <Icon name="camera" className="w-5 h-5"/>
-                                Take Photo
+                                 <Icon name="camera" className="w-5 h-5"/> Capture
                             </button>
-                            <input ref={fileInputRef} id={`photo-upload-${index}`} type="file" multiple accept="image/*" onChange={handlePhotoUpload} className="hidden" />
                         </div>
-                    )}
-                </div>
-                <div className="mt-2 text-xs text-gray-500 space-y-1">
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-3 gap-3">
+                        {animalData.photos.map(photo => (
+                            <div key={photo.id} className="relative group aspect-square">
+                                <img src={photo.previewUrl} alt="Animal preview" className="w-full h-full object-cover rounded-md" />
+                                <button onClick={() => removePhoto(photo.id)} className="absolute top-1 right-1 bg-red-600/80 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 focus:opacity-100">
+                                    <Icon name="trash" className="w-3 h-3" />
+                                </button>
+                            </div>
+                        ))}
+                        {animalData.photos.length < 5 && (
+                            <button 
+                                type="button" 
+                                onClick={() => fileInputRef.current?.click()} 
+                                className="aspect-square flex flex-col items-center justify-center bg-cream-50 rounded-md border-2 border-dashed border-cream-200 text-gray-500 hover:bg-cream-100 hover:border-accent-400 hover:text-accent-600 transition-colors"
+                                aria-label="Add more photos"
+                            >
+                                <Icon name="upload" className="w-8 h-8"/>
+                                <span className="text-xs mt-1 font-semibold">Add More</span>
+                            </button>
+                        )}
+                    </div>
+                )}
+                
+                <input ref={fileInputRef} id={`photo-upload-${index}`} type="file" multiple accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+
+                <div className="mt-3 text-xs text-gray-500 space-y-1">
                     <p><strong>Photo Tips:</strong> Clear side, front, and rear views in good lighting work best for AI analysis.</p>
                 </div>
             </div>
 
-            <div className="lg:col-span-2 space-y-4">
+            {/* Details Section */}
+            <div className="lg:col-span-7 space-y-5">
                 <div className="relative">
                     <label className="block text-sm font-medium text-primary-800">Species</label>
                     <select name="species" value={animalData.species} onChange={handleInputChange} disabled={isDetecting} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900 disabled:bg-gray-200">
+                        <option value="" disabled>Choose Species</option>
                         <option value="Cattle">Cattle</option>
                         <option value="Buffalo">Buffalo</option>
                     </select>
                     {isDetecting && <div className="absolute top-8 right-2"><Spinner /></div>}
                 </div>
                 <div className="relative">
-                    <label className="block text-sm font-medium text-primary-800">Gender</label>
-                    <select name="gender" value={animalData.gender} onChange={handleInputChange} disabled={isDetecting} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900 disabled:bg-gray-200">
+                    <label className="block text-sm font-medium text-primary-800">Sex</label>
+                    <select name="sex" value={animalData.sex} onChange={handleInputChange} disabled={isDetecting} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900 disabled:bg-gray-200">
+                        <option value="" disabled>Choose Sex</option>
                         <option value="Female">Female</option>
                         <option value="Male">Male</option>
                     </select>
@@ -158,9 +203,11 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ index, animalData, onUpd
                         type="number" 
                         name="ageValue" 
                         value={animalData.ageValue} 
-                        onChange={handleInputChange} 
+                        onChange={handleInputChange}
+                        min={animalData.ageUnit === 'Months' ? '6' : '0'}
+                        max={animalData.ageUnit === 'Months' ? '12' : '20'}
                         className="block w-full p-2 border-r-0 border-gray-300 rounded-l-md focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900" 
-                        placeholder="e.g., 5" 
+                        placeholder={animalData.ageUnit === 'Months' ? 'e.g., 8' : 'e.g., 5'}
                       />
                       <select 
                         name="ageUnit" 
@@ -172,10 +219,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ index, animalData, onUpd
                           <option>Months</option>
                       </select>
                     </div>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-primary-800">Health Notes (Optional)</label>
-                    <textarea name="healthNotes" value={animalData.healthNotes} onChange={handleInputChange} rows={3} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900" placeholder="Any visible signs, vaccination status, etc."></textarea>
+                    {ageError && <p className="mt-1 text-xs text-red-600">{ageError}</p>}
                 </div>
             </div>
         </div>
@@ -190,8 +234,8 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ index, animalData, onUpd
 };
 
 const Spinner: React.FC = () => (
-    <svg className="animate-spin h-5 w-5 text-accent-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <svg className="animate-spin h-5 w-5 text-accent-500" xmlns="http://www.w.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 * 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
 );

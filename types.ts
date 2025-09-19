@@ -1,6 +1,7 @@
 
+
 export type Species = 'Cattle' | 'Buffalo';
-export type Gender = 'Male' | 'Female';
+export type Gender = 'Male' | 'Female' | 'Other' | 'Prefer not to say';
 export type Confidence = 'High' | 'Medium' | 'Low';
 export type AgeUnit = 'Years' | 'Months';
 
@@ -12,25 +13,32 @@ export interface PhotoFile {
 
 export interface AnimalData {
   id:string;
-  species: Species;
+  species: Species | '';
   ageValue: string;
   ageUnit: AgeUnit;
-  gender: Gender;
-  healthNotes: string;
+  sex: 'Male' | 'Female' | '';
   photos: PhotoFile[];
 }
 
 export interface OwnerData {
   name: string;
   mobile: string;
-  aadhaar: string;
   dob: string;
-  gender: Gender;
+  gender: Gender | '';
   address: string;
   village: string;
   district: string;
   state: string;
+  pincode: string;
+  idType: IdType;
+  idNumber: string;
+  casteCategory: CasteCategory;
+  bankAccount: string;
+  ifscCode: string;
 }
+
+export type IdType = 'Aadhaar' | 'Voter ID' | 'Ration Card' | 'Passport' | '';
+export type CasteCategory = 'General' | 'OBC' | 'SC' | 'ST' | '';
 
 export interface BreedIdentificationResult {
   error: string | null;
@@ -50,6 +58,7 @@ export interface Registration {
   timestamp: string;
   owner: OwnerData;
   animals: AnimalResult[];
+  isSample?: boolean;
 }
 
 export interface ChatMessage {
@@ -62,12 +71,4 @@ export interface BreedInfo {
     species: Species;
     facts: string;
     sources?: { uri: string; title: string }[];
-}
-
-export interface Announcement {
-    id: string;
-    title: string;
-    content: string;
-    link: string;
-    tags: string[];
 }
