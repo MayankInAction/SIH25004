@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { OwnerData, IdType, CasteCategory } from '../types';
+import { OwnerData, IdType } from '../types';
 import { INDIAN_STATES } from '../constants';
 import { INDIAN_STATES_AND_DISTRICTS } from '../utils/locationData';
 import { Icon } from './icons';
+import { generateRandomOwnerData } from '../utils/dataGenerator';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface OwnerFormProps {
   initialData: OwnerData;
@@ -20,12 +22,12 @@ const Spinner: React.FC = () => (
     </svg>
 );
 
-const ID_VALIDATION_RULES: { [key in IdType]: { regex: RegExp, length: number, errorMessage: string } } = {
-    'Aadhaar': { regex: /^\d{12}$/, length: 12, errorMessage: 'Aadhaar must be 12 digits.' },
-    'Voter ID': { regex: /^[A-Z]{3}[0-9]{7}$/, length: 10, errorMessage: 'Voter ID must be 3 letters followed by 7 numbers (e.g., ABC1234567).' },
-    'Ration Card': { regex: /^[a-zA-Z0-9]{8,16}$/, length: 16, errorMessage: 'Ration Card must be 8-16 alphanumeric characters.' },
-    'Passport': { regex: /^[A-PR-WYa-pr-wy][1-9]\d\s?\d{4}[1-9]$/, length: 8, errorMessage: 'Passport format must be 1 letter followed by 7 numbers (e.g., A1234567).' },
-    '': { regex: /.*/, length: 0, errorMessage: '' } // for empty selection
+const ID_VALIDATION_RULES: { [key in IdType]: { regex: RegExp, length: number, errorMessageKey: string } } = {
+    'Aadhaar': { regex: /^\d{12}$/, length: 12, errorMessageKey: 'ownerForm.errors.aadhaar' },
+    'Voter ID': { regex: /^[A-Z]{3}[0-9]{7}$/, length: 10, errorMessageKey: 'ownerForm.errors.voterId' },
+    'Ration Card': { regex: /^[a-zA-Z0-9]{8,16}$/, length: 16, errorMessageKey: 'ownerForm.errors.rationCard' },
+    'Passport': { regex: /^[A-PR-WYa-pr-wy][1-9]\d\s?\d{4}[1-9]$/, length: 8, errorMessageKey: 'ownerForm.errors.passport' },
+    '': { regex: /.*/, length: 0, errorMessageKey: '' } // for empty selection
 };
 
 export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onBack, isSubmitting, isUpdateMode }) => {
@@ -33,7 +35,8 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
   const [districts, setDistricts] = useState<string[]>([]);
   const [errors, setErrors] = useState<Partial<Record<keyof OwnerData, string>>>({});
   const [validFields, setValidFields] = useState<Partial<Record<keyof OwnerData, boolean>>>({});
-
+  const { t } = useLanguage();
+  
   const today = new Date().toISOString().split('T')[0];
   const minDate = new Date(new Date().setFullYear(new Date().getFullYear() - 100)).toISOString().split('T')[0];
 
@@ -43,17 +46,41 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
     setDistricts(formData.state ? INDIAN_STATES_AND_DISTRICTS[formData.state] || [] : []);
   }, [formData.state]);
 
-  const validateField = (name: keyof OwnerData, value: string): string | null => {
+  const validateField = (name: keyof OwnerData, value: string, currentData: OwnerData): string | null => {
       switch (name) {
-          case 'mobile': return /^\d{10}$/.test(value) ? null : 'Mobile must be 10 digits.';
-          case 'pincode': return value.length > 0 && !/^\d{6}$/.test(value) ? 'PIN code must be 6 digits.' : null;
-          case 'ifscCode': return value.length > 0 && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value) ? 'Invalid IFSC code format.' : null;
+          case 'mobile': return /^\d{10}$/.test(value) ? null : t('ownerForm.errors.mobile');
+          case 'pincode': return value.length > 0 && !/^\d{6}$/.test(value) ? t('ownerForm.errors.pincode') : null;
+          case 'ifscCode': return value.length > 0 && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value) ? t('ownerForm.errors.ifsc') : null;
           case 'idNumber':
-              const rule = ID_VALIDATION_RULES[formData.idType];
-              return rule && !rule.regex.test(value) ? rule.errorMessage : null;
+              const rule = ID_VALIDATION_RULES[currentData.idType];
+              return rule && rule.errorMessageKey && !rule.regex.test(value) ? t(rule.errorMessageKey) : null;
           default: return null;
       }
   };
+  
+  const handleFillSampleData = () => {
+    const sampleData = generateRandomOwnerData();
+    setFormData(sampleData);
+
+    // Trigger validation for all filled fields
+    const newValidFields: Partial<Record<keyof OwnerData, boolean>> = {};
+    const newErrors: Partial<Record<keyof OwnerData, string>> = {};
+
+    (Object.keys(sampleData) as Array<keyof OwnerData>).forEach(key => {
+        const value = sampleData[key];
+        if (value) { // Only validate non-empty fields
+            const error = validateField(key, value, sampleData);
+            newValidFields[key] = !error;
+            if (error) {
+                newErrors[key] = error;
+            }
+        }
+    });
+
+    setValidFields(newValidFields);
+    setErrors(newErrors);
+  };
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target as { name: keyof OwnerData; value: string };
@@ -71,7 +98,7 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
     
     setFormData(updatedFormData);
 
-    const validationError = validateField(name, value);
+    const validationError = validateField(name, value, updatedFormData);
     setValidFields(prev => ({ ...prev, [name]: !validationError }));
   };
   
@@ -81,12 +108,12 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
       
       requiredFields.forEach(key => {
           if (!formData[key] || formData[key].toString().trim() === '') {
-              newErrors[key] = 'This field is required.';
+              newErrors[key] = t('ownerForm.errors.required');
           }
       });
       
       (Object.keys(formData) as Array<keyof OwnerData>).forEach(key => {
-          const validationError = validateField(key, formData[key]);
+          const validationError = validateField(key, formData[key], formData);
           if (validationError) {
               newErrors[key] = validationError;
           }
@@ -94,8 +121,8 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
 
       if (formData.dob) {
           const selectedDate = new Date(formData.dob);
-          if (selectedDate > new Date(today)) newErrors.dob = 'Date of Birth cannot be in the future.';
-          if (selectedDate < new Date(minDate)) newErrors.dob = "Owner's age cannot exceed 100 years.";
+          if (selectedDate > new Date(today)) newErrors.dob = t('ownerForm.errors.dobFuture');
+          if (selectedDate < new Date(minDate)) newErrors.dob = t('ownerForm.errors.dobOld');
       }
       
       setErrors(newErrors);
@@ -111,74 +138,84 @@ export const OwnerForm: React.FC<OwnerFormProps> = ({ initialData, onSubmit, onB
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm space-y-6 border border-cream-200">
-       <h3 className="text-xl font-bold text-primary-900">{isUpdateMode ? 'Update Owner & Location Information' : 'Owner & Location Information'}</h3>
+        <div className="flex justify-between items-center flex-wrap gap-4">
+            <h3 className="text-xl font-bold text-primary-900">{isUpdateMode ? t('ownerForm.updateTitle') : t('ownerForm.title')}</h3>
+            <button
+                type="button"
+                onClick={handleFillSampleData}
+                className="flex items-center gap-2 px-3 py-2 border-2 border-dashed border-accent-yellow-400 rounded-md text-accent-yellow-700 font-semibold hover:bg-accent-yellow-50 text-sm transition-all duration-150 active:scale-95"
+            >
+                <Icon name="light-bulb" className="w-5 h-5" />
+                {t('ownerForm.fillSample')}
+            </button>
+        </div>
       
-      <Section title="Personal Details">
+      <Section title={t('ownerForm.personalTitle')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Owner Name" name="name" value={formData.name} onChange={handleChange} error={errors.name} required />
-            <InputField label="Mobile Number" name="mobile" type="tel" value={formData.mobile} onChange={handleChange} maxLength={10} error={errors.mobile} pattern="\d*" isValid={validFields.mobile} required />
-            <InputField label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} error={errors.dob} max={today} min={minDate} required />
-            <SelectField label="Gender" name="gender" value={formData.gender} onChange={handleChange} error={errors.gender} required>
-                <option value="" disabled>Choose Gender</option>
-                <option value="Female">Female</option>
-                <option value="Male">Male</option>
-                <option value="Other">Other</option>
-                <option value="Prefer not to say">Prefer not to say</option>
+            <InputField label={t('ownerForm.name')} name="name" value={formData.name} onChange={handleChange} error={errors.name} required />
+            <InputField label={t('ownerForm.mobile')} name="mobile" type="tel" value={formData.mobile} onChange={handleChange} maxLength={10} error={errors.mobile} pattern="\d*" isValid={validFields.mobile} required />
+            <InputField label={t('ownerForm.dob')} name="dob" type="date" value={formData.dob} onChange={handleChange} error={errors.dob} max={today} min={minDate} required />
+            <SelectField label={t('ownerForm.gender')} name="gender" value={formData.gender} onChange={handleChange} error={errors.gender} required>
+                <option value="" disabled>{t('ownerForm.chooseGender')}</option>
+                <option value="Female">{t('sex.female')}</option>
+                <option value="Male">{t('sex.male')}</option>
+                <option value="Other">{t('gender.other')}</option>
+                <option value="Prefer not to say">{t('gender.preferNotToSay')}</option>
             </SelectField>
-            <SelectField label="Caste/Category (Optional)" name="casteCategory" value={formData.casteCategory} onChange={handleChange} error={errors.casteCategory}>
-                <option value="">Select Category</option>
-                <option value="General">General</option>
-                <option value="OBC">OBC</option>
-                <option value="SC">SC</option>
-                <option value="ST">ST</option>
+            <SelectField label={t('ownerForm.caste')} name="casteCategory" value={formData.casteCategory} onChange={handleChange} error={errors.casteCategory}>
+                <option value="">{t('ownerForm.selectCategory')}</option>
+                <option value="General">{t('caste.general')}</option>
+                <option value="OBC">{t('caste.obc')}</option>
+                <option value="SC">{t('caste.sc')}</option>
+                <option value="ST">{t('caste.st')}</option>
             </SelectField>
         </div>
       </Section>
       
-      <Section title="Identification Details">
+      <Section title={t('ownerForm.idTitle')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <SelectField label="ID Proof Type" name="idType" value={formData.idType} onChange={handleChange} error={errors.idType} required>
-                <option value="Aadhaar">Aadhaar</option>
-                <option value="Voter ID">Voter ID</option>
-                <option value="Ration Card">Ration Card</option>
-                <option value="Passport">Passport</option>
+            <SelectField label={t('ownerForm.idType')} name="idType" value={formData.idType} onChange={handleChange} error={errors.idType} required>
+                <option value="Aadhaar">{t('id.aadhaar')}</option>
+                <option value="Voter ID">{t('id.voter')}</option>
+                <option value="Ration Card">{t('id.ration')}</option>
+                <option value="Passport">{t('id.passport')}</option>
             </SelectField>
-            <InputField label={`${formData.idType || 'ID'} Number`} name="idNumber" value={formData.idNumber} onChange={handleChange} error={errors.idNumber} maxLength={ID_VALIDATION_RULES[formData.idType]?.length || 50} isValid={validFields.idNumber} required />
+            <InputField label={t('ownerForm.idNumber', { idType: t(`id.${formData.idType?.toLowerCase() || 'id'}`) })} name="idNumber" value={formData.idNumber} onChange={handleChange} error={errors.idNumber} maxLength={ID_VALIDATION_RULES[formData.idType]?.length || 50} isValid={validFields.idNumber} required />
         </div>
       </Section>
 
-      <Section title="Location Details">
+      <Section title={t('ownerForm.locationTitle')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Full Address" name="address" value={formData.address} onChange={handleChange} error={errors.address} required />
-            <InputField label="Village / Town" name="village" value={formData.village} onChange={handleChange} error={errors.village} required />
-            <SelectField label="State" name="state" value={formData.state} onChange={handleChange} error={errors.state} required>
-                <option value="" disabled>Select a state</option>
+            <InputField label={t('ownerForm.address')} name="address" value={formData.address} onChange={handleChange} error={errors.address} required />
+            <InputField label={t('ownerForm.village')} name="village" value={formData.village} onChange={handleChange} error={errors.village} required />
+            <SelectField label={t('ownerForm.state')} name="state" value={formData.state} onChange={handleChange} error={errors.state} required>
+                <option value="" disabled>{t('ownerForm.selectState')}</option>
                 {INDIAN_STATES.map(state => <option key={state} value={state}>{state}</option>)}
             </SelectField>
-            <SelectField label="District" name="district" value={formData.district} onChange={handleChange} error={errors.district} disabled={!formData.state || districts.length === 0} required>
-                <option value="" disabled>Select a district</option>
+            <SelectField label={t('ownerForm.district')} name="district" value={formData.district} onChange={handleChange} error={errors.district} disabled={!formData.state || districts.length === 0} required>
+                <option value="" disabled>{t('ownerForm.selectDistrict')}</option>
                 {districts.map(district => <option key={district} value={district}>{district}</option>)}
             </SelectField>
-            <InputField label="PIN Code (Optional)" name="pincode" type="tel" value={formData.pincode} onChange={handleChange} maxLength={6} error={errors.pincode} pattern="\d*" isValid={validFields.pincode} />
+            <InputField label={t('ownerForm.pincode')} name="pincode" type="tel" value={formData.pincode} onChange={handleChange} maxLength={6} error={errors.pincode} pattern="\d*" isValid={validFields.pincode} />
         </div>
       </Section>
       
-      <Section title="Bank Details (Optional, for DBT Linkage)">
+      <Section title={t('ownerForm.bankTitle')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField label="Bank Account Number" name="bankAccount" value={formData.bankAccount} onChange={handleChange} error={errors.bankAccount} pattern="\d*" />
-              <InputField label="IFSC Code" name="ifscCode" value={formData.ifscCode} onChange={handleChange} maxLength={11} error={errors.ifscCode} isValid={validFields.ifscCode} />
+              <InputField label={t('ownerForm.account')} name="bankAccount" value={formData.bankAccount} onChange={handleChange} error={errors.bankAccount} pattern="\d*" />
+              <InputField label={t('ownerForm.ifsc')} name="ifscCode" value={formData.ifscCode} onChange={handleChange} maxLength={11} error={errors.ifscCode} isValid={validFields.ifscCode} />
           </div>
       </Section>
 
 
       <div className="flex justify-between mt-8 pt-6 border-t border-cream-200">
-        <button type="button" onClick={onBack} className="px-6 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 disabled:opacity-50 transition-transform duration-150 active:scale-95" disabled={isSubmitting}>Back</button>
+        <button type="button" onClick={onBack} className="px-6 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 disabled:opacity-50 transition-transform duration-150 active:scale-95" disabled={isSubmitting}>{t('buttons.back')}</button>
         <button 
             type="submit" 
             className="px-8 py-2 bg-accent-500 text-white font-semibold rounded-md hover:bg-accent-600 shadow-sm flex items-center justify-center w-56 disabled:bg-accent-400 disabled:cursor-not-allowed transition-transform duration-150 active:scale-95"
             disabled={isSubmitting}
         >
-          {isSubmitting ? <><Spinner />Processing...</> : (isUpdateMode ? 'Save Changes' : 'Submit for AI Analysis')}
+          {isSubmitting ? <><Spinner />{t('buttons.processing')}</> : (isUpdateMode ? t('buttons.saveChanges') : t('buttons.submitForAnalysis'))}
         </button>
       </div>
     </form>
@@ -201,7 +238,7 @@ interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 const InputField: React.FC<InputFieldProps> = ({ label, name, error, isValid, ...props }) => (
   <div>
-    <label htmlFor={name} className="block text-sm font-medium text-primary-800">{label}</label>
+    <label htmlFor={name} className="block text-sm font-medium text-primary-800">{label}{props.required && ' *'}</label>
     <div className="relative mt-1">
         <input
           id={name}
@@ -228,7 +265,7 @@ interface SelectFieldProps extends React.SelectHTMLAttributes<HTMLSelectElement>
 
 const SelectField: React.FC<SelectFieldProps> = ({ label, name, error, children, ...props }) => (
     <div>
-        <label htmlFor={name} className="block text-sm font-medium text-primary-800">{label}</label>
+        <label htmlFor={name} className="block text-sm font-medium text-primary-800">{label}{props.required && ' *'}</label>
         <select
             id={name}
             name={name}

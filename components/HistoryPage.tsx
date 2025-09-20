@@ -1,27 +1,26 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Registration, AnimalResult, Confidence } from '../types';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { Registration, AnimalResult } from '../types';
 import { Icon } from './icons';
 import { INDIAN_STATES, ALL_BREEDS } from '../constants';
 import { INDIAN_STATES_AND_DISTRICTS } from '../utils/locationData';
+import { useLanguage } from '../contexts/LanguageContext';
 
-// FIX: Added initialSearchTerm to props to accept a search term from other components.
 interface HistoryPageProps {
   selectedRegistration: Registration | null;
   onBack: () => void;
   onEdit: (registration: Registration) => void;
   initialSearchTerm: string;
+  registrations: Registration[];
 }
 
-export const HistoryPage: React.FC<HistoryPageProps> = ({ selectedRegistration, onBack, onEdit, initialSearchTerm }) => {
-  const [registrations] = useLocalStorage<Registration[]>('registrations', []);
+export const HistoryPage: React.FC<HistoryPageProps> = ({ selectedRegistration, onBack, onEdit, initialSearchTerm, registrations }) => {
   const [activeRegistration, setActiveRegistration] = useState<Registration | null>(selectedRegistration);
   const [isMounted, setIsMounted] = useState(false);
-  // FIX: Initialize searchTerm state with the passed-in prop.
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({ state: '', district: '', species: '', breed: '' });
   const [districts, setDistricts] = useState<string[]>([]);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (filters.state && INDIAN_STATES_AND_DISTRICTS[filters.state]) {
@@ -52,21 +51,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ selectedRegistration, 
       .filter(reg => {
         const lowerSearchTerm = searchTerm.toLowerCase();
 
-        // Search term filter (owner name, idNumber)
         const searchTermMatch = !lowerSearchTerm || 
           reg.owner.name.toLowerCase().includes(lowerSearchTerm) ||
           reg.owner.idNumber.includes(searchTerm);
         
-        // State filter
         const stateMatch = !filters.state || reg.owner.state === filters.state;
 
-        // District filter
         const districtMatch = !filters.district || reg.owner.district === filters.district;
 
-        // Species filter
         const speciesMatch = !filters.species || reg.animals.some(animal => animal.species === filters.species);
 
-        // Breed filter
         const breedMatch = !filters.breed || reg.animals.some(animal => !animal.aiResult.error && animal.aiResult.breedName === filters.breed);
 
         return searchTermMatch && stateMatch && districtMatch && speciesMatch && breedMatch;
@@ -98,41 +92,41 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ selectedRegistration, 
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-primary-900">Registration History</h1>
-        <button onClick={onBack} className="px-4 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 text-sm transition-transform duration-150 active:scale-95">Back to Dashboard</button>
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-primary-900">{t('history.title')}</h1>
+        <button onClick={onBack} className="px-4 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 text-sm transition-transform duration-150 active:scale-95 self-end sm:self-auto">{t('buttons.backToDash')}</button>
       </div>
 
       <div className="bg-white p-4 rounded-xl shadow-sm border border-cream-200 mb-6">
-          <div className="flex gap-4 items-center">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch sm:items-center">
               <div className="flex-grow relative">
                   <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
                   <input
                       type="text"
-                      placeholder="Search by Owner Name or ID Number..."
+                      placeholder={t('history.searchPlaceholder')}
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
                       className="w-full p-3 pl-12 border border-gray-300 rounded-full bg-cream-50 text-gray-900 focus:ring-accent-500 focus:border-accent-500"
                   />
               </div>
-              <button onClick={() => setShowFilters(!showFilters)} className="px-4 py-3 border border-gray-300 rounded-full text-primary-700 font-semibold hover:bg-gray-50 text-sm flex items-center gap-2">
+              <button onClick={() => setShowFilters(!showFilters)} className="w-full sm:w-auto px-4 py-3 border border-gray-300 rounded-full text-primary-700 font-semibold hover:bg-gray-50 text-sm flex items-center justify-center gap-2">
                   <Icon name="filter" className="w-5 h-5" />
-                  Filters
+                  {t('history.filters')}
               </button>
           </div>
 
           {showFilters && (
             <div className="mt-4 pt-4 border-t border-cream-200">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <label htmlFor="state-filter" className="block text-sm font-medium text-primary-800">State</label>
+                  <label htmlFor="state-filter" className="block text-sm font-medium text-primary-800">{t('ownerForm.state')}</label>
                   <select id="state-filter" name="state" value={filters.state} onChange={handleFilterChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900">
-                    <option value="">All States</option>
+                    <option value="">{t('history.allStates')}</option>
                     {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="district-filter" className="block text-sm font-medium text-primary-800">District</label>
+                  <label htmlFor="district-filter" className="block text-sm font-medium text-primary-800">{t('ownerForm.district')}</label>
                   <select
                     id="district-filter"
                     name="district"
@@ -141,28 +135,28 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ selectedRegistration, 
                     disabled={!filters.state || districts.length === 0}
                     className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900 disabled:bg-gray-100"
                   >
-                    <option value="">All Districts</option>
+                    <option value="">{t('history.allDistricts')}</option>
                     {districts.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="species-filter" className="block text-sm font-medium text-primary-800">Species</label>
+                  <label htmlFor="species-filter" className="block text-sm font-medium text-primary-800">{t('animalForm.species')}</label>
                   <select id="species-filter" name="species" value={filters.species} onChange={handleFilterChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900">
-                    <option value="">All Species</option>
-                    <option value="Cattle">Cattle</option>
-                    <option value="Buffalo">Buffalo</option>
+                    <option value="">{t('history.allSpecies')}</option>
+                    <option value="Cattle">{t('species.cattle')}</option>
+                    <option value="Buffalo">{t('species.buffalo')}</option>
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="breed-filter" className="block text-sm font-medium text-primary-800">Breed</label>
+                  <label htmlFor="breed-filter" className="block text-sm font-medium text-primary-800">{t('history.breed')}</label>
                   <select id="breed-filter" name="breed" value={filters.breed} onChange={handleFilterChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-accent-500 focus:border-accent-500 bg-white text-gray-900">
-                    <option value="">All Breeds</option>
+                    <option value="">{t('history.allBreeds')}</option>
                     {ALL_BREEDS.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
                   </select>
                 </div>
               </div>
               <div className="mt-4 flex justify-end">
-                <button onClick={clearFilters} className="text-sm font-semibold text-accent-600 hover:underline">Clear All Filters & Search</button>
+                <button onClick={clearFilters} className="text-sm font-semibold text-accent-600 hover:underline">{t('history.clearFilters')}</button>
               </div>
             </div>
           )}
@@ -173,11 +167,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ selectedRegistration, 
           {filteredRegistrations.map((reg, index) => (
             <div 
               key={reg.id} 
-              className={`bg-white p-4 rounded-xl shadow-sm border border-cream-200 flex items-center justify-between transition-all duration-300 ease-out transform ${isMounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+              className={`bg-white p-4 rounded-xl shadow-sm border border-cream-200 flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-between gap-4 transition-all duration-300 ease-out transform ${isMounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
               style={{ transitionDelay: `${index * 50}ms` }}
             >
               <div className="flex items-center">
-                <div className="w-12 h-12 rounded-lg bg-cream-100 flex items-center justify-center mr-4 overflow-hidden">
+                <div className="w-12 h-12 rounded-lg bg-cream-100 flex-shrink-0 flex items-center justify-center mr-4 overflow-hidden">
                     {reg.animals[0]?.photos?.[0]?.previewUrl ? (
                         <img src={reg.animals[0].photos[0].previewUrl} alt="Animal" className="w-full h-full object-cover"/>
                     ) : (
@@ -187,22 +181,22 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ selectedRegistration, 
                 <div>
                   <p className="font-bold text-lg text-primary-900">{reg.owner.name}</p>
                   <p className="text-sm text-primary-700">
-                    {new Date(reg.timestamp).toLocaleString()} • {reg.animals.length} animal{reg.animals.length > 1 ? 's' : ''}
+                    {new Date(reg.timestamp).toLocaleString()} • {t('history.animalCount', { count: reg.animals.length })}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-center">
                 <button
                     onClick={() => onEdit(reg)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 text-sm transition-transform duration-150 active:scale-95"
+                    className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 text-sm transition-transform duration-150 active:scale-95"
                 >
-                    Update
+                    {t('buttons.update')}
                 </button>
                 <button
                     onClick={() => handleSelectRegistration(reg)}
-                    className="px-4 py-2 bg-accent-500 text-white rounded-md hover:bg-accent-600 text-sm font-semibold transition-transform duration-150 active:scale-95"
+                    className="w-full sm:w-auto px-4 py-2 bg-accent-500 text-white rounded-md hover:bg-accent-600 text-sm font-semibold transition-transform duration-150 active:scale-95"
                 >
-                    View Report
+                    {t('buttons.viewReport')}
                 </button>
               </div>
             </div>
@@ -211,8 +205,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ selectedRegistration, 
       ) : (
         <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-cream-200">
           <Icon name="search" className="w-16 h-16 mx-auto text-gray-400" />
-          <h2 className="mt-4 text-xl font-semibold text-gray-700">No Matching Registrations</h2>
-          <p className="mt-2 text-gray-500">{searchTerm || filters.state || filters.district || filters.species || filters.breed ? 'Try different search or filter criteria.' : 'Complete a new registration to see it listed here.'}</p>
+          <h2 className="mt-4 text-xl font-semibold text-gray-700">{t('history.noMatchTitle')}</h2>
+          <p className="mt-2 text-gray-500">{searchTerm || filters.state || filters.district || filters.species || filters.breed ? t('history.noMatchSubtitleFilter') : t('history.noMatchSubtitleEmpty')}</p>
         </div>
       )}
     </div>
@@ -267,6 +261,9 @@ const getValidityInfo = (animal: AnimalResult, issueDate: Date) => {
 
 const RegistrationDetail: React.FC<{ registration: Registration; onBack: () => void; onEdit: () => void; }> = ({ registration, onBack, onEdit }) => {
   const [maskData, setMaskData] = useState(true);
+  const [activeAnimalIndex, setActiveAnimalIndex] = useState(0);
+  const [isPrintingAll, setIsPrintingAll] = useState(false);
+  const { t } = useLanguage();
   
   const issueDate = new Date(registration.timestamp);
   const year = issueDate.getFullYear();
@@ -301,44 +298,66 @@ const RegistrationDetail: React.FC<{ registration: Registration; onBack: () => v
       );
   }, [animalValidityData, issueDate]);
 
+  const handlePrintFullReport = () => {
+    setIsPrintingAll(true);
+  };
+
+  useEffect(() => {
+    if (isPrintingAll) {
+      const handleAfterPrint = () => {
+        setIsPrintingAll(false);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
+      window.addEventListener('afterprint', handleAfterPrint);
+      window.print();
+    }
+  }, [isPrintingAll]);
+
+
+  const displayedAnimals = isPrintingAll ? registration.animals : (registration.animals[activeAnimalIndex] ? [registration.animals[activeAnimalIndex]] : []);
+  const displayedValidityData = isPrintingAll ? animalValidityData : (animalValidityData[activeAnimalIndex] ? [animalValidityData[activeAnimalIndex]] : []);
+
   return (
-    <div className="bg-cream-100 print:bg-white -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8 font-serif">
+    <div className="bg-cream-100 print:bg-white -m-2 sm:-m-4 md:-m-6 lg:-m-8 p-2 sm:p-4 md:p-6 lg:p-8 font-serif print-container">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6 print:hidden">
+        <div className="flex justify-between items-center mb-6 no-print">
             <button 
                 onClick={onBack} 
                 className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-primary-700 font-semibold hover:bg-gray-50 text-sm transition-transform duration-150 active:scale-95"
             >
                 <Icon name="chevron-left" className="w-4 h-4" />
-                Back to List
+                {t('buttons.backToList')}
             </button>
             <div className="flex items-center space-x-2">
-                <button onClick={() => window.print()} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-transform duration-150 active:scale-90" title="Print Report"><Icon name="print" /></button>
-                <button onClick={onEdit} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-transform duration-150 active:scale-90" title="Update Report"><Icon name="pencil-square" /></button>
+                <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-gray-100 rounded-md border border-gray-300 transition-transform duration-150 active:scale-95"><Icon name="print" className="w-4 h-4"/>{t('buttons.printCert')}</button>
+                {registration.animals.length > 1 &&
+                    <button onClick={handlePrintFullReport} className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-gray-100 rounded-md border border-gray-300 transition-transform duration-150 active:scale-95"><Icon name="history" className="w-4 h-4"/>{t('buttons.printFull')}</button>
+                }
+                <button onClick={onEdit} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-transform duration-150 active:scale-90" title={t('buttons.updateReport')}><Icon name="pencil-square" /></button>
             </div>
         </div>
 
-        <div id="certificate" className="bg-white p-2 shadow-lg rounded-xl border border-cream-200 print:shadow-none print:border-none print:rounded-none">
-            <div className="border-4 border-primary-800 p-1">
-                <div className="border border-primary-700 p-6 rounded-lg relative overflow-hidden">
+        <div id="certificate" className="bg-white p-1 sm:p-2 shadow-lg rounded-xl border border-cream-200 print:shadow-none print:border-none print:rounded-none">
+            <div className="border-2 sm:border-4 border-primary-800 p-0 sm:p-1">
+                <div className="border border-primary-700 p-2 sm:p-4 md:p-6 rounded-lg relative overflow-hidden">
                     <div className="absolute inset-0 flex items-center justify-center z-0">
-                        <p className="text-gray-200/50 text-7xl md:text-8xl lg:text-9xl font-extrabold tracking-widest -rotate-[30deg] select-none pointer-events-none">
+                        <p className="text-gray-200/50 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-extrabold tracking-widest -rotate-[30deg] select-none pointer-events-none">
                             GOVERNMENT OF INDIA
                         </p>
                     </div>
                     <div className="relative z-10">
-                        <header className="flex justify-between items-start text-center border-b-2 border-primary-800 pb-4 mb-4">
-                           <div className="w-24 flex-shrink-0 flex justify-center items-center h-24">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Logo_of_the_Department_of_Animal_Husbandry_and_Dairying.svg/240px-Logo_of_the_Department_of_Animal_Husbandry_and_Dairying.svg.png" alt="Ministry Logo" className="h-20 w-auto" />
+                        <header className="flex justify-between items-start text-center border-b-2 border-primary-800 pb-2 sm:pb-4 mb-2 sm:mb-4">
+                           <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 flex justify-center items-center">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Logo_of_the_Department_of_Animal_Husbandry_and_Dairying.svg/240px-Logo_of_the_Department_of_Animal_Husbandry_and_Dairying.svg.png" alt="Ministry Logo" className="h-14 sm:h-20 w-auto" />
                            </div>
-                           <div className="flex-grow">
-                               <h1 className="font-bold text-lg text-primary-900">भारत सरकार / Government of India</h1>
-                               <p className="font-semibold text-base text-primary-800 mt-1">पशुपालन और डेयरी विभाग</p>
-                               <p className="text-sm text-primary-700">Department of Animal Husbandry and Dairying</p>
-                               <p className="text-xs text-primary-600">Ministry of Fisheries, Animal Husbandry & Dairying</p>
+                           <div className="flex-grow px-1">
+                               <h1 className="font-bold text-sm sm:text-lg text-primary-900">भारत सरकार / Government of India</h1>
+                               <p className="font-semibold text-xs sm:text-base text-primary-800 mt-1">पशुपालन और डेयरी विभाग</p>
+                               <p className="text-[10px] sm:text-sm text-primary-700">Department of Animal Husbandry and Dairying</p>
+                               <p className="text-[8px] sm:text-xs text-primary-600">Ministry of Fisheries, Animal Husbandry & Dairying</p>
                            </div>
-                           <div className="w-24 h-24 flex-shrink-0 flex flex-col items-center justify-center text-xs">
-                               <div className="bg-white p-1 border rounded-md">
+                           <div className="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0 flex flex-col items-center justify-center text-xs">
+                               <div className="bg-white p-0.5 sm:p-1 border rounded-md w-14 h-14 sm:w-auto sm:h-auto">
                                   <img src={qrCodeUrl} alt="QR Code for Verification" />
                                </div>
                                <p className="font-mono mt-1 text-[8px] tracking-tighter">Scan to Verify</p>
@@ -347,48 +366,70 @@ const RegistrationDetail: React.FC<{ registration: Registration; onBack: () => v
                         
                         <main>
                             <div className="text-right -mt-2 mb-2">
-                                <p className="text-xs"><strong>Report Reference Number:</strong> <span className="font-mono">{referenceNumber}</span></p>
+                                <p className="text-[10px] sm:text-xs"><strong>Report Reference:</strong> <span className="font-mono">{referenceNumber}</span></p>
                             </div>
-                            <h2 className="text-center text-2xl font-bold tracking-wider text-primary-900 uppercase">Animal Breed Identification Certificate</h2>
-                            <p className="text-center font-mono font-semibold text-primary-800 mt-1">CERTIFICATE NO: {certificateId}</p>
+                            <h2 className="text-center text-lg sm:text-xl md:text-2xl font-bold tracking-wider text-primary-900 uppercase">Animal Breed Identification Certificate</h2>
+                            <p className="text-center font-mono font-semibold text-primary-800 mt-1 text-sm sm:text-base">CERTIFICATE NO: {certificateId}</p>
 
-                            <div className="flex justify-between items-baseline mt-4 text-sm">
+                            <div className="flex flex-col sm:flex-row justify-between items-baseline mt-4 text-xs sm:text-sm">
                                 <p><strong>Issue Date:</strong> {issueDate.toLocaleDateString('en-GB')}</p>
                                 <p><strong>Valid Until:</strong> {overallValidity.validUntil.toLocaleDateString('en-GB')} ({overallValidity.validityReason})</p>
                             </div>
 
                             <div className="mt-6">
-                                <h3 className="font-bold text-lg text-primary-900 border-b border-primary-300 pb-1 mb-3">Owner Information</h3>
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-base">
-                                    <p><strong className="w-28 inline-block font-semibold text-primary-800">Name:</strong> {registration.owner.name}</p>
-                                    <p><strong className="w-28 inline-block font-semibold text-primary-800">Location:</strong> {`${registration.owner.village}, ${registration.owner.district}`}</p>
-                                    <p><strong className="w-28 inline-block font-semibold text-primary-800">Mobile:</strong> {maskData ? mask(registration.owner.mobile) : registration.owner.mobile}</p>
-                                    <p><strong className="w-28 inline-block font-semibold text-primary-800">State:</strong> {registration.owner.state}</p>
-                                    <p><strong className="w-28 inline-block font-semibold text-primary-800">{registration.owner.idType}:</strong> {maskData ? mask(registration.owner.idNumber) : registration.owner.idNumber}</p>
+                                <h3 className="font-bold text-base sm:text-lg text-primary-900 border-b border-primary-300 pb-1 mb-3">Owner Information</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm sm:text-base">
+                                    <p><strong className="w-20 sm:w-28 inline-block font-semibold text-primary-800">Name:</strong> {registration.owner.name}</p>
+                                    <p><strong className="w-20 sm:w-28 inline-block font-semibold text-primary-800">Location:</strong> {[registration.owner.village, registration.owner.district].filter(Boolean).join(', ')}</p>
+                                    <p><strong className="w-20 sm:w-28 inline-block font-semibold text-primary-800">Mobile:</strong> {maskData ? mask(registration.owner.mobile) : registration.owner.mobile}</p>
+                                    <p><strong className="w-20 sm:w-28 inline-block font-semibold text-primary-800">State:</strong> {registration.owner.state}</p>
+                                    <p><strong className="w-20 sm:w-28 inline-block font-semibold text-primary-800">{registration.owner.idType}:</strong> {maskData ? mask(registration.owner.idNumber) : registration.owner.idNumber}</p>
                                 </div>
-                                 <label className="flex items-center text-sm text-gray-600 pt-3 print:hidden">
+                                 <label className="flex items-center text-sm text-gray-600 pt-3 no-print">
                                     <input type="checkbox" checked={!maskData} onChange={() => setMaskData(!maskData)} className="mr-2 h-4 w-4 rounded text-accent-600 focus:ring-accent-500 border-gray-300" />
                                     Show sensitive data
                                 </label>
                             </div>
 
                             <div className="mt-6">
-                                <h3 className="font-bold text-lg text-primary-900 border-b border-primary-300 pb-1 mb-3">Registered Animal Details</h3>
+                                <h3 className="font-bold text-base sm:text-lg text-primary-900 border-b border-primary-300 pb-1 mb-3">Registered Animal Details</h3>
+                                
+                                {registration.animals.length > 1 && !isPrintingAll && (
+                                    <div className="border-b border-cream-200 mb-4 no-print">
+                                        <nav className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto" aria-label="Tabs">
+                                            {registration.animals.map((animal, index) => (
+                                                <button
+                                                    key={animal.id}
+                                                    onClick={() => setActiveAnimalIndex(index)}
+                                                    className={`
+                                                        ${index === activeAnimalIndex
+                                                        ? 'border-accent-500 text-accent-600'
+                                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+                                                        whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm sm:text-base transition-all
+                                                    `}
+                                                >
+                                                    {t('results.animalTab', { index: index + 1 })} - {animal.aiResult.error ? t('results.analysisFailed') : animal.aiResult.breedName}
+                                                </button>
+                                            ))}
+                                        </nav>
+                                    </div>
+                                )}
+
                                 <div className="space-y-6">
-                                    {registration.animals.map((animal, index) => <AnimalCertificateRecord key={animal.id} animal={animal} index={index} isSenior={animalValidityData[index].isSenior} />)}
+                                    {displayedAnimals.map((animal, index) => <AnimalCertificateRecord key={animal.id} animal={animal} index={isPrintingAll ? index : activeAnimalIndex} isSenior={displayedValidityData[index].isSenior} />)}
                                 </div>
                             </div>
                         </main>
 
                         <footer className="mt-8 pt-4 border-t space-y-4">
-                            <div className="flex justify-between items-end">
+                            <div className="flex flex-col sm:flex-row justify-between items-center sm:items-end gap-4">
                                 <div className="text-center">
-                                    <div className="w-28 h-28 border-2 border-dashed border-primary-600 rounded-full flex items-center justify-center">
+                                    <div className="w-24 h-24 sm:w-28 sm:h-28 border-2 border-dashed border-primary-600 rounded-full flex items-center justify-center">
                                         <p className="text-xs text-primary-700">Official Seal Area</p>
                                     </div>
                                 </div>
 
-                                <div className="text-center text-sm w-1/3">
+                                <div className="text-center text-sm w-full sm:w-1/3">
                                     <p className="font-['Caveat',_cursive] text-2xl text-primary-900 -mb-2">Dr. Priya Sharma</p>
                                     <p className="border-b border-primary-800 pb-1 font-semibold text-primary-800">Dr. Priya Sharma</p>
                                     <p className="font-semibold text-primary-800">Authorized Officer</p>
@@ -411,34 +452,39 @@ const RegistrationDetail: React.FC<{ registration: Registration; onBack: () => v
 };
 
 
-const ConfidenceBadge: React.FC<{ level: Confidence }> = ({ level }) => {
-  const styles = {
-    High: 'bg-green-100 text-green-800 border-green-300',
-    Medium: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    Low: 'bg-red-100 text-red-800 border-red-300',
+const ConfidenceIndicator: React.FC<{ score: number, isUserVerified?: boolean }> = ({ score, isUserVerified }) => {
+  const getColor = () => {
+    if (score >= 85) return 'bg-green-100 text-green-800 border-green-300';
+    if (score >= 75) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    return 'bg-red-100 text-red-800 border-red-300';
   };
-  return <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles[level]}`}>{level} Confidence</span>;
+
+  const text = isUserVerified 
+    ? <><Icon name="check" className="w-3 h-3 mr-1"/>{score}% (User Verified)</> 
+    : `${score}% Confidence`;
+
+  return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getColor()}`}>{text}</span>;
 };
 
 const AnimalCertificateRecord: React.FC<{animal: AnimalResult, index: number, isSenior: boolean}> = ({ animal, index, isSenior }) => {
   const hasError = !!animal.aiResult.error;
   return (
-    <div className={`p-4 rounded-lg border ${hasError ? 'bg-red-50/50 border-red-200' : 'bg-cream-50/50 border-cream-200'} break-inside-avoid print:shadow-none`}>
+    <div className={`p-2 sm:p-4 rounded-lg border ${hasError ? 'bg-red-50/50 border-red-200' : 'bg-cream-50/50 border-cream-200'} break-inside-avoid print:shadow-none`}>
         <div className="flex justify-between items-center pb-2 mb-3 border-b border-dashed border-primary-300">
-            <h4 className="text-lg font-bold text-primary-900">{hasError ? `Animal Record #${index+1}` : animal.aiResult.breedName}</h4>
-            {!hasError && <ConfidenceBadge level={animal.aiResult.confidence} />}
+            <h4 className="text-base sm:text-lg font-bold text-primary-900">{hasError ? `Animal Record #${index+1}` : animal.aiResult.breedName}</h4>
+            {!hasError && <ConfidenceIndicator score={animal.aiResult.confidence} isUserVerified={animal.aiResult.isUserVerified} />}
         </div>
         {isSenior && !hasError && (
             <div className="mb-3 p-2 text-center bg-accent-yellow-100 border border-accent-yellow-200 rounded-md">
                 <p className="font-bold text-xs text-accent-yellow-800 tracking-wider">SENIOR ANIMAL — ANNUAL HEALTH CHECK REQUIRED</p>
             </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             <div className="md:col-span-1">
                 {animal.photos?.[0]?.previewUrl ? (
-                    <img src={animal.photos[0].previewUrl} alt={`Animal ${index+1}`} className="w-full h-40 object-cover rounded-md border p-1 bg-white"/>
+                    <img src={animal.photos[0].previewUrl} alt={`Animal ${index+1}`} className="w-full h-32 sm:h-40 object-cover rounded-md border p-1 bg-white"/>
                 ) : (
-                    <div className="w-full h-40 flex items-center justify-center bg-cream-100 rounded-md border p-1">
+                    <div className="w-full h-32 sm:h-40 flex items-center justify-center bg-cream-100 rounded-md border p-1">
                         <Icon name="cow" className="w-16 h-16 text-gray-400" />
                     </div>
                 )}
@@ -454,18 +500,18 @@ const AnimalCertificateRecord: React.FC<{animal: AnimalResult, index: number, is
                       <p><strong>Analysis Failed:</strong> {animal.aiResult.error}</p>
                     </div>
                 ) : (
-                    <div className="space-y-3 text-sm">
+                    <div className="space-y-3 text-xs sm:text-sm">
                         <div>
                             <h5 className="font-semibold text-primary-800 uppercase text-xs tracking-wider">AI Reasoning</h5>
-                            <p className="text-primary-900 text-base">{animal.aiResult.reasoning}</p>
+                            <p className="text-primary-900 sm:text-base">{animal.aiResult.reasoning}</p>
                         </div>
                          <div>
                             <h5 className="font-semibold text-primary-800 uppercase text-xs tracking-wider">Milk Yield Potential</h5>
-                            <p className="text-primary-900 text-base">{animal.aiResult.milkYieldPotential}</p>
+                            <p className="text-primary-900 sm:text-base">{animal.aiResult.milkYieldPotential}</p>
                         </div>
                          <div>
                             <h5 className="font-semibold text-primary-800 uppercase text-xs tracking-wider">General Care Notes</h5>
-                            <p className="text-primary-900 text-base">{animal.aiResult.careNotes}</p>
+                            <p className="text-primary-900 sm:text-base">{animal.aiResult.careNotes}</p>
                         </div>
                     </div>
                 )}

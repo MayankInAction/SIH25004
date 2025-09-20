@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse, Chat } from "@google/genai";
-import { Species, ChatMessage } from '../types';
+import { Species, ChatMessage, SchemeInfo } from '../types';
 import { CATTLE_BREEDS, BUFFALO_BREEDS } from '../constants';
 
 const API_KEY = process.env.API_KEY;
@@ -12,6 +13,20 @@ const ai = new GoogleGenAI({ apiKey: API_KEY! });
 let breedChatInstance: Chat | null = null;
 let generalChatInstance: Chat | null = null;
 
+const breedChoiceSchema = {
+    type: Type.OBJECT,
+    properties: {
+        breedName: {
+            type: Type.STRING,
+            description: "The name of a potential breed from the list."
+        },
+        confidencePercentage: {
+            type: Type.INTEGER,
+            description: "The AI's confidence in this specific breed, as a percentage (e.g., 60 for 60%)."
+        }
+    },
+    required: ['breedName', 'confidencePercentage']
+};
 
 const breedIdSchema = {
   type: Type.OBJECT,
@@ -20,11 +35,16 @@ const breedIdSchema = {
       type: Type.STRING, 
       description: "Error message if validation fails (e.g., blurry image, multiple animals, species mismatch). Set to 'null' as a string if successful.",
     },
-    breedName: { type: Type.STRING, description: "The most likely breed name from the provided list." },
-    confidence: { type: Type.STRING, description: "Confidence level: 'High', 'Medium', or 'Low'." },
+    breedName: { type: Type.STRING, description: "The single most likely breed name from the provided list. Even if confidence is low, this should be the top candidate." },
+    confidence: { type: Type.INTEGER, description: "Overall confidence score as a percentage (0-100)." },
     milkYieldPotential: { type: Type.STRING, description: "A brief summary of the breed's milk yield potential." },
     careNotes: { type: Type.STRING, description: "A short paragraph on general care and management." },
     reasoning: { type: Type.STRING, description: "Brief explanation for the identification based on visual traits." },
+    topCandidates: {
+      type: Type.ARRAY,
+      description: "ONLY populate this array if the overall confidence is below 75. It should contain the top 3 most likely breed candidates. The confidence percentages among these candidates must sum to 100.",
+      items: breedChoiceSchema
+    }
   },
   required: ['error', 'breedName', 'confidence', 'milkYieldPotential', 'careNotes', 'reasoning'],
 };
@@ -41,6 +61,10 @@ export const identifyBreed = async (images: { mimeType: string; data: string }[]
     3.  **Image Quality:** Assess if images are clear enough. If blurry, obstructed, or at poor angles, set the 'error' field.
 
     If all checks pass, identify the breed from this list: [${breedList.join(', ')}].
+
+    - Your primary output is the single most likely 'breedName' and an overall 'confidence' score as a percentage from 0 to 100.
+    - **Doubt Resolution Rule:** If, and only if, your overall confidence is below 75, you MUST also provide the top 3 most likely breeds in the 'topCandidates' array. Distribute a total of 100% confidence among these three candidates. If confidence is 75 or above, the 'topCandidates' array must be empty.
+
     Provide your response strictly in the specified JSON format. If no error, the 'error' field must be the string 'null'.
   `;
 
@@ -75,7 +99,7 @@ export const identifyBreed = async (images: { mimeType: string; data: string }[]
     return {
       error: "Failed to communicate with AI service. Please check your connection and API key.",
       breedName: "Unknown",
-      confidence: "Low",
+      confidence: 0,
       milkYieldPotential: "N/A",
       careNotes: "N/A",
       reasoning: "An error occurred during AI analysis.",
@@ -106,8 +130,13 @@ const animalDetailsSchema = {
                         description: "The identified sex. Must be either 'Male' or 'Female'.",
                         enum: ['Male', 'Female']
                     },
+                    sexConfidence: {
+                        type: Type.STRING,
+                        description: "Confidence for sex detection: 'High', 'Medium', or 'Low'.",
+                        enum: ['High', 'Medium', 'Low']
+                    },
                 },
-                required: ['species', 'sex']
+                required: ['species', 'sex', 'sexConfidence']
             }
         }
     },
@@ -117,11 +146,12 @@ const animalDetailsSchema = {
 export const detectAnimalDetails = async (image: { mimeType: string; data: string }) => {
     const prompt = `
     Analyze the attached image to identify all instances of cattle and buffalo.
-    For each animal found, determine its species ('Cattle' or 'Buffalo') and sex ('Male' or 'Female').
+    For each animal found, determine its species ('Cattle' or 'Buffalo'), sex ('Male' or 'Female'), and your confidence in the sex determination ('High', 'Medium', or 'Low').
 
     To improve sex accuracy, look for these features:
     - **For 'Male'**: Look for the presence of a preputial sheath (pizzle) under the belly, a more pronounced hump (in Zebu cattle), and a generally more muscular build, especially in the neck and shoulders. The absence of a developed udder is a strong indicator.
     - **For 'Female'**: Look for the presence of an udder and teats between the hind legs. If the animal is young (a heifer), the udder may be small, but it should still be distinguishable.
+    - **Confidence**: Base your confidence on the visibility of these key features. If they are clearly visible, confidence is 'High'. If they are somewhat obscured or ambiguous, it is 'Medium'. If they are not visible at all, confidence is 'Low'.
 
     - If the image is unclear, obstructed, or the key sex features are not visible, set the 'error' field.
     - If no animals are found in a clear image, return an empty 'animals' array.
@@ -203,6 +233,60 @@ export const getBreedFacts = async (breedName: string, species: Species) => {
             facts: "Could not retrieve detailed information for this breed at the moment. Please try again later.",
             sources: [],
             error: "Failed to communicate with the AI service.",
+        };
+    }
+};
+
+const schemeInfoSchema = {
+    type: Type.OBJECT,
+    properties: {
+        schemeName: { type: Type.STRING, description: "Name of the government scheme or program." },
+        issuingBody: { type: Type.STRING, description: "The issuing body (e.g., Central Government, State Government of Gujarat)." },
+        description: { type: Type.STRING, description: "A brief summary of the scheme's benefits and purpose." },
+        eligibility: { type: Type.STRING, description: "Key eligibility criteria for the animal owner or the animal itself." },
+        healthCheckRequired: { type: Type.BOOLEAN, description: "A boolean indicating if periodic animal health checks are mandatory for this scheme." },
+        healthCheckFrequency: { type: Type.STRING, description: "If health checks are required, specify the frequency (e.g., 'Annual', 'Bi-annual', 'Quarterly', 'On Application', 'Not Applicable')." },
+    },
+    required: ['schemeName', 'issuingBody', 'description', 'eligibility', 'healthCheckRequired', 'healthCheckFrequency']
+};
+
+const schemesSchema = {
+    type: Type.ARRAY,
+    items: schemeInfoSchema
+};
+
+export const getSchemeInfo = async (breedName: string, species: Species): Promise<{ schemes: SchemeInfo[], error: string | null }> => {
+    const prompt = `
+        List relevant and current central and state government schemes, subsidies, insurance programs, and breeding incentives available in India for owners of a ${breedName} ${species}.
+        For each scheme, provide the following details:
+        - schemeName: The official name of the scheme.
+        - issuingBody: The governing body (e.g., 'Central Government', 'State Government of Gujarat').
+        - description: A brief summary of the benefits.
+        - eligibility: Key eligibility criteria for the farmer/owner.
+        - healthCheckRequired: A boolean indicating if periodic animal health checks are mandatory for this scheme.
+        - healthCheckFrequency: If health checks are required, specify the frequency (e.g., 'Annual', 'Bi-annual', 'Quarterly', 'Not Applicable').
+
+        Provide your response strictly in the specified JSON format. If no specific schemes are found, return an empty array.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schemesSchema,
+            },
+        });
+
+        const jsonText = response.text;
+        const result = JSON.parse(jsonText);
+        return { schemes: result, error: null };
+    } catch (error) {
+        console.error("Error fetching scheme info:", error);
+        return {
+            schemes: [],
+            error: "Could not retrieve scheme information at this time. Please try again later.",
         };
     }
 };

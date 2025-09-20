@@ -1,5 +1,4 @@
 
-
 export type Species = 'Cattle' | 'Buffalo';
 export type Gender = 'Male' | 'Female' | 'Other' | 'Prefer not to say';
 export type Confidence = 'High' | 'Medium' | 'Low';
@@ -18,6 +17,7 @@ export interface AnimalData {
   ageUnit: AgeUnit;
   sex: 'Male' | 'Female' | '';
   photos: PhotoFile[];
+  sexConfidence?: Confidence;
 }
 
 export interface OwnerData {
@@ -40,13 +40,20 @@ export interface OwnerData {
 export type IdType = 'Aadhaar' | 'Voter ID' | 'Ration Card' | 'Passport' | '';
 export type CasteCategory = 'General' | 'OBC' | 'SC' | 'ST' | '';
 
+export interface BreedChoice {
+  breedName: string;
+  confidencePercentage: number;
+}
+
 export interface BreedIdentificationResult {
   error: string | null;
   breedName: string;
-  confidence: Confidence;
+  confidence: number;
+  isUserVerified?: boolean;
   milkYieldPotential: string;
   careNotes: string;
   reasoning: string;
+  topCandidates?: BreedChoice[];
 }
 
 export interface AnimalResult extends AnimalData {
@@ -71,4 +78,13 @@ export interface BreedInfo {
     species: Species;
     facts: string;
     sources?: { uri: string; title: string }[];
+}
+
+export interface SchemeInfo {
+    schemeName: string;
+    issuingBody: string;
+    description: string;
+    eligibility: string;
+    healthCheckRequired: boolean;
+    healthCheckFrequency: string;
 }

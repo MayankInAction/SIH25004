@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { AnimalResult, OwnerData, Confidence, ChatMessage, Registration } from '../types';
+import { AnimalResult, OwnerData, ChatMessage, Registration, SchemeInfo, Species } from '../types';
 import { Icon } from './icons';
-import { startChat, sendMessageToChat } from '../services/geminiService';
+import { startChat, sendMessageToChat, getSchemeInfo } from '../services/geminiService';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ResultsPageProps {
   results: AnimalResult[];
@@ -11,16 +13,24 @@ interface ResultsPageProps {
   onViewReport: (registration: Registration) => void;
 }
 
-const ConfidenceBadge: React.FC<{ level: Confidence }> = ({ level }) => {
-  const styles = {
-    High: 'bg-green-100 text-green-800 border-green-200',
-    Medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    Low: 'bg-red-100 text-red-800 border-red-200',
+const ConfidenceIndicator: React.FC<{ score: number, isUserVerified?: boolean }> = ({ score, isUserVerified }) => {
+  const { t } = useLanguage();
+  const getColor = () => {
+    if (score >= 85) return 'bg-green-100 text-green-800 border-green-200';
+    if (score >= 75) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    return 'bg-red-100 text-red-800 border-red-200';
   };
-  return <span className={`px-2.5 py-0.5 rounded-full text-sm font-medium border ${styles[level]}`}>{level} Confidence</span>;
+
+  return (
+    <div className={`px-2.5 py-1 rounded-full text-sm font-medium border flex items-center gap-1.5 ${getColor()}`}>
+      {isUserVerified && <Icon name="check" className="w-4 h-4" title={t('results.userVerified')} />}
+      <span>{score}% {t('results.confidence')}</span>
+      {isUserVerified && <span className="font-bold text-xs">({t('results.verified')})</span>}
+    </div>
+  );
 };
 
-const ExplorePromptButton: React.FC<{ iconName: 'syringe' | 'building-library' | 'light-bulb', text: string, onClick: () => void, disabled: boolean }> = ({ iconName, text, onClick, disabled }) => (
+const ExplorePromptButton: React.FC<{ iconName: 'syringe' | 'light-bulb', text: string, onClick: () => void, disabled: boolean }> = ({ iconName, text, onClick, disabled }) => (
     <button
         onClick={onClick}
         disabled={disabled}
@@ -34,16 +44,21 @@ const ExplorePromptButton: React.FC<{ iconName: 'syringe' | 'building-library' |
     </button>
 );
 
-const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }> = ({ animal, index }) => {
+const AnimalResultCardWithChat: React.FC<{ 
+    animal: AnimalResult; 
+    index: number; 
+    onCheckSchemes: (animal: AnimalResult) => void;
+}> = ({ animal, index, onCheckSchemes }) => {
   const [activeChat, setActiveChat] = useState<ChatMessage[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!animal.aiResult.error) {
       startChat(animal.aiResult.breedName);
-      setActiveChat([{ role: 'model', parts: [{ text: `Hello! I can answer questions about the ${animal.aiResult.breedName} breed. How can I help?` }] }]);
+      setActiveChat([{ role: 'model', parts: [{ text: t('results.chat.greeting', { breedName: animal.aiResult.breedName }) }] }]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [animal.aiResult.breedName, animal.aiResult.error, animal.id]); // Added animal.id to re-trigger effect on tab change
@@ -69,16 +84,13 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
     setIsLoading(false);
   };
   
-  const handleExploreClick = (topic: 'vaccinations' | 'schemes' | 'benefits') => {
+  const handleExploreClick = (topic: 'vaccinations' | 'benefits') => {
     const breedName = animal.aiResult.breedName;
     const species = animal.species.toLowerCase();
     let prompt = '';
     switch (topic) {
         case 'vaccinations':
             prompt = `What are the recommended vaccinations for a ${breedName} ${species}? Please provide a typical schedule.`;
-            break;
-        case 'schemes':
-            prompt = `List some government schemes that might apply to an owner of a ${breedName} ${species} in India.`;
             break;
         case 'benefits':
             prompt = `What are the key benefits, characteristics, and care tips for the ${breedName} breed?`;
@@ -90,7 +102,7 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-cream-200">
-      <h2 className="text-xl font-bold text-primary-900 mb-4">Result for Animal #{index + 1} ({animal.species})</h2>
+      <h2 className="text-xl font-bold text-primary-900 mb-4">{t('results.title', { index: index + 1, species: t(`species.${animal.species.toLowerCase()}`) })}</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <div className="mb-4 overflow-hidden rounded-lg aspect-video bg-cream-100 flex items-center justify-center">
@@ -102,7 +114,7 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
           </div>
           {animal.aiResult.error ? (
             <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
-              <h3 className="text-lg font-bold text-red-800">Analysis Failed</h3>
+              <h3 className="text-lg font-bold text-red-800">{t('results.analysisFailed')}</h3>
               <p className="text-red-700 mt-1">{animal.aiResult.error}</p>
             </div>
           ) : (
@@ -110,31 +122,34 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <h3 className="text-2xl font-bold text-primary-800">{animal.aiResult.breedName}</h3>
-                  <ConfidenceBadge level={animal.aiResult.confidence} />
+                  <ConfidenceIndicator score={animal.aiResult.confidence} isUserVerified={animal.aiResult.isUserVerified} />
                 </div>
-                <ResultDetail label="AI Reasoning" content={animal.aiResult.reasoning} />
-                <ResultDetail label="Milk Yield Potential" content={animal.aiResult.milkYieldPotential} />
-                <ResultDetail label="General Care Notes" content={animal.aiResult.careNotes} />
+                <ResultDetail label={t('results.aiReasoning')} content={animal.aiResult.reasoning} />
+                <ResultDetail label={t('results.milkYield')} content={animal.aiResult.milkYieldPotential} />
+                <ResultDetail label={t('results.careNotes')} content={animal.aiResult.careNotes} />
+              </div>
+               <div className="mt-6">
+                  <button
+                      onClick={() => onCheckSchemes(animal)}
+                      className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-secondary-600 text-white font-semibold rounded-lg shadow-md hover:bg-secondary-700 transition-transform duration-150 active:scale-95"
+                  >
+                      <Icon name="building-library" className="w-5 h-5" />
+                      {t('results.checkSchemes')}
+                  </button>
               </div>
 
               <div className="pt-6 mt-6 border-t border-cream-200">
-                <h4 className="font-semibold text-primary-800 mb-3">Explore Further with AI:</h4>
+                <h4 className="font-semibold text-primary-800 mb-3">{t('results.explore')}</h4>
                 <div className="space-y-2">
                   <ExplorePromptButton
                       iconName="syringe"
-                      text="Recommended Vaccinations"
+                      text={t('results.exploreVaccinations')}
                       onClick={() => handleExploreClick('vaccinations')}
                       disabled={isLoading}
                   />
                   <ExplorePromptButton
-                      iconName="building-library"
-                      text="Applicable Govt. Schemes"
-                      onClick={() => handleExploreClick('schemes')}
-                      disabled={isLoading}
-                  />
-                  <ExplorePromptButton
                       iconName="light-bulb"
-                      text="Breed Benefits & Tips"
+                      text={t('results.exploreBenefits')}
                       onClick={() => handleExploreClick('benefits')}
                       disabled={isLoading}
                   />
@@ -147,7 +162,7 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
         {!animal.aiResult.error && (
           <div className="flex flex-col bg-cream-50 rounded-lg border border-secondary-200 min-h-[400px]">
             <div className="p-3 border-b border-secondary-200 bg-secondary-100 rounded-t-lg">
-              <h4 className="font-bold text-secondary-900 flex items-center gap-2"><Icon name="chat-bubble" className="w-5 h-5"/>Ask about {animal.aiResult.breedName}</h4>
+              <h4 className="font-bold text-secondary-900 flex items-center gap-2"><Icon name="chat-bubble" className="w-5 h-5"/>{t('results.chat.title', { breedName: animal.aiResult.breedName })}</h4>
             </div>
             <div className="flex-grow p-4 space-y-4 h-64 overflow-y-auto">
               {activeChat.map((msg, index) => (
@@ -161,7 +176,7 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
               {isLoading && (
                  <div className="flex items-end gap-2 justify-start">
                    <div className="w-8 h-8 rounded-full bg-secondary-800 flex items-center justify-center text-white text-lg flex-shrink-0">🐮</div>
-                   <div className="p-3 rounded-2xl bg-white text-gray-500 text-sm rounded-bl-none shadow-sm">Thinking...</div>
+                   <div className="p-3 rounded-2xl bg-white text-gray-500 text-sm rounded-bl-none shadow-sm">{t('generic.thinking')}</div>
                  </div>
               )}
               <div ref={messagesEndRef} />
@@ -172,7 +187,7 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(userInput)}
-                placeholder="Ask a question..."
+                placeholder={t('results.chat.placeholder')}
                 className="flex-grow p-2 border border-gray-300 rounded-l-md focus:ring-secondary-500 focus:border-secondary-500 bg-white text-gray-900"
                 disabled={isLoading}
               />
@@ -187,10 +202,110 @@ const AnimalResultCardWithChat: React.FC<{ animal: AnimalResult; index: number }
   );
 };
 
+const SchemeCard: React.FC<{ scheme: SchemeInfo }> = ({ scheme }) => {
+    const { t } = useLanguage();
+    return (
+        <div className="bg-cream-50 p-4 rounded-lg border border-cream-200">
+            <div className="flex justify-between items-start">
+                <div>
+                    <h4 className="font-bold text-lg text-primary-900">{scheme.schemeName}</h4>
+                    <p className="text-sm font-semibold text-primary-700">{scheme.issuingBody}</p>
+                </div>
+                {scheme.healthCheckRequired && (
+                    <div className="text-center flex-shrink-0 ml-4">
+                        <div className="p-2 bg-accent-yellow-100 rounded-full inline-block">
+                            <Icon name="calendar-days" className="w-6 h-6 text-accent-yellow-700" />
+                        </div>
+                        <p className="text-xs font-bold text-accent-yellow-800 mt-1">{scheme.healthCheckFrequency}</p>
+                    </div>
+                )}
+            </div>
+            <div className="mt-3 pt-3 border-t border-dashed border-cream-200 space-y-2 text-sm">
+                <div>
+                    <h5 className="font-semibold text-primary-800">{t('results.schemes.benefits')}:</h5>
+                    <p className="text-primary-800">{scheme.description}</p>
+                </div>
+                <div>
+                    <h5 className="font-semibold text-primary-800">{t('results.schemes.eligibility')}:</h5>
+                    <p className="text-primary-800">{scheme.eligibility}</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+const SchemesModal: React.FC<{
+    animal: AnimalResult | null;
+    schemes: SchemeInfo[];
+    error: string | null;
+    isLoading: boolean;
+    onClose: () => void;
+}> = ({ animal, schemes, error, isLoading, onClose }) => {
+    const { t } = useLanguage();
+    if (!animal) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-cream-50 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-cream-200 flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-primary-900">{t('results.schemes.title', { breedName: animal.aiResult.breedName })}</h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-cream-200"><Icon name="close" className="w-6 h-6 text-gray-500"/></button>
+                </div>
+                <div className="flex-grow p-4 overflow-y-auto">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                            <Icon name="ai-sparkles" className="w-12 h-12 text-gray-400 animate-pulse mb-2"/>
+                            <p className="font-semibold">{t('results.schemes.loading')}</p>
+                        </div>
+                    ) : error ? (
+                         <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg"><p className="text-red-700">{error}</p></div>
+                    ) : schemes.length > 0 ? (
+                        <div className="space-y-4">{schemes.map((scheme, i) => <SchemeCard key={i} scheme={scheme} />)}</div>
+                    ) : (
+                        <div className="text-center py-10">
+                             <Icon name="search" className="w-12 h-12 mx-auto text-gray-400" />
+                             <p className="mt-2 font-semibold text-primary-700">{t('results.schemes.noSchemes')}</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 export const ResultsPage: React.FC<ResultsPageProps> = ({ results, owner, onFinish, registration, onViewReport }) => {
   const [isMounted, setIsMounted] = useState(false);
   const [activeAnimalIndex, setActiveAnimalIndex] = useState(0);
+  const { t } = useLanguage();
+
+  const [schemes, setSchemes] = useState<SchemeInfo[]>([]);
+  const [schemesError, setSchemesError] = useState<string | null>(null);
+  const [isLoadingSchemes, setIsLoadingSchemes] = useState(false);
+  const [schemesForAnimal, setSchemesForAnimal] = useState<AnimalResult | null>(null);
+
+  const handleCheckSchemes = async (animal: AnimalResult) => {
+      if (!animal || animal.aiResult.error) return;
+      setSchemesForAnimal(animal);
+      setIsLoadingSchemes(true);
+      setSchemes([]);
+      setSchemesError(null);
+
+      try {
+        const { schemes: fetchedSchemes, error } = await getSchemeInfo(animal.aiResult.breedName, animal.species as Species);
+        setSchemes(fetchedSchemes);
+        setSchemesError(error);
+      } catch (e) {
+        setSchemesError("Failed to fetch schemes due to an unexpected error.");
+      } finally {
+        setIsLoadingSchemes(false);
+      }
+  };
+
+  const handleCloseSchemesModal = () => {
+      setSchemesForAnimal(null);
+  };
   
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 100);
@@ -203,8 +318,8 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ results, owner, onFini
         <div className={`transition-all duration-500 ease-out transform ${isMounted ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}>
             <Icon name="check" className="w-16 h-16 mx-auto text-accent-600 bg-accent-100 rounded-full p-3" />
         </div>
-        <h1 className="text-3xl font-bold mt-4 text-primary-900">AI Analysis Complete</h1>
-        <p className="text-primary-700 mt-2">Registration for owner <span className="font-semibold text-primary-900">{owner.name}</span> has been successfully created.</p>
+        <h1 className="text-3xl font-bold mt-4 text-primary-900">{t('results.pageTitle')}</h1>
+        <p className="text-primary-700 mt-2">{t('results.pageSubtitle', { ownerName: owner.name })}</p>
       </div>
 
       {/* Tabs for multiple animals */}
@@ -222,7 +337,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ results, owner, onFini
                   whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-all
                 `}
               >
-                Animal #{index + 1} - {animal.aiResult.error ? 'Analysis Failed' : animal.aiResult.breedName}
+                {t('results.animalTab', { index: index + 1 })} - {animal.aiResult.error ? t('results.analysisFailed') : animal.aiResult.breedName}
               </button>
             ))}
           </nav>
@@ -234,7 +349,11 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ results, owner, onFini
             key={results[activeAnimalIndex].id} // Add key to force re-mount of child component on tab change
             className={`transition-all duration-500 ease-out transform ${isMounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
           >
-            <AnimalResultCardWithChat animal={results[activeAnimalIndex]} index={activeAnimalIndex} />
+            <AnimalResultCardWithChat 
+                animal={results[activeAnimalIndex]} 
+                index={activeAnimalIndex} 
+                onCheckSchemes={handleCheckSchemes}
+            />
           </div>
       )}
 
@@ -244,16 +363,24 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ results, owner, onFini
           onClick={onFinish} 
           className="px-8 py-3 border border-gray-300 text-primary-700 font-semibold rounded-lg hover:bg-gray-50 transition-transform duration-150 active:scale-95"
         >
-          Back to Dashboard
+          {t('buttons.backToDash')}
         </button>
         <button 
           onClick={() => registration && onViewReport(registration)} 
           disabled={!registration}
           className="px-8 py-3 bg-accent-500 text-white font-semibold rounded-lg shadow-md hover:bg-accent-600 transition-transform duration-150 active:scale-95 disabled:bg-accent-300"
         >
-          View Official Report
+          {t('buttons.viewOfficialReport')}
         </button>
       </div>
+
+       <SchemesModal
+        animal={schemesForAnimal}
+        schemes={schemes}
+        error={schemesError}
+        isLoading={isLoadingSchemes}
+        onClose={handleCloseSchemesModal}
+      />
     </div>
   );
 };

@@ -3,14 +3,14 @@
 import { OwnerData, BreedInfo } from './types';
 import { INDIAN_STATES_AND_DISTRICTS } from './utils/locationData';
 
-// Updated with 53 Indigenous + 1 Synthetic as per ICAR-NBAGR data
+// Updated with indigenous, cross-bred, and exotic breeds.
 export const CATTLE_BREEDS: string[] = [
-    "Amritmahal", "Bachaur", "Bargur", "Dangi", "Deoni", "Gaolao", "Gir", "Hallikar", "Hariana", "Kangayam", "Kankrej", "Kenkatha", "Kherigarh", "Khillar", "Krishna Valley", "Malvi", "Mewati", "Nagori", "Nimari", "Ongole", "Ponwar", "Punganur", "Rathi", "Red Kandhari", "Red Sindhi", "Sahiwal", "Siri", "Tharparkar", "Umblachery", "Vechur", "Motu", "Ghumusari", "Binjharpuri", "Khariar", "Pulikulam", "Kosali", "Malnad Gidda", "Belahi", "Gangatiri", "Badri", "Lakhimi", "Ladakhi", "Konkan Kapila", "Poda Thurpu", "Nari", "Dagri", "Thutho", "Shweta Kapila", "Himachali Pahari", "Purnea", "Kathani", "Sanchori", "Masilum", "Frieswal"
+    "Alambadi", "Amritmahal", "Ayrshire", "Bachaur", "Badri", "Bargur", "Belahi", "Binjharpuri", "Brown Swiss", "Dagri", "Dangi", "Deoni", "Frieswal", "Gangatiri", "Gaolao", "Ghumusari", "Gir", "Guernsey", "Hallikar", "Hariana", "Himachali Pahari", "Holstein Friesian", "Jersey", "Kangayam", "Kankrej", "Kasargod", "Kathani", "Kenkatha", "Khariar", "Kherigarh", "Khillari", "Konkan Kapila", "Kosali", "Krishna Valley", "Ladakhi", "Lakhimi", "Malnad Gidda", "Malvi", "Masilum", "Mewati", "Motu", "Nagon", "Nagori", "Nari", "Nimari", "Ongole", "Poda Thurpu", "Ponwar", "Pulikulam", "Punganur", "Purnea", "Rathi", "Red Dane", "Red Kandhari", "Red Sindhi", "Sahiwal", "Sanchori", "Shweta Kapila", "Siri", "Tharparkar", "Thutho", "Umblachery", "Vechur"
 ];
 
-// Updated with 20 breeds as per ICAR-NBAGR data
+// Updated with 19 breeds as per ICAR-NBAGR data, corrected list.
 export const BUFFALO_BREEDS: string[] = [
-    "Banni", "Bargur", "Bhadawari", "Chhattisgarhi", "Chilika", "Dharwad", "Gojri", "Jaffarabadi", "Kalahandi", "Luit (Swamp)", "Manda", "Marathwadi", "Mehsana", "Murrah", "Nagpuri", "Nili Ravi", "Pandharpuri", "Purnathadi", "Surti", "Toda"
+    "Banni", "Bhadawari", "Chhattisgarhi", "Chilika", "Dharwad", "Gojri", "Jaffarabadi", "Kalahandi", "Luit (Swamp)", "Manda", "Marathwadi", "Mehsana", "Murrah", "Nagpuri", "Nili Ravi", "Pandharpuri", "Purnathadi", "Surti", "Toda"
 ];
 
 export const ALL_BREEDS: BreedInfo[] = [

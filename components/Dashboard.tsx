@@ -1,12 +1,10 @@
-
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Icon } from './icons';
-import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Registration, ChatMessage, BreedInfo } from '../types';
 import { startGeneralChat, sendMessageToGeneralChat, getBreedFacts } from '../services/geminiService';
 import { ALL_BREEDS } from '../constants';
 import { UpdateRecordModal } from './UpdateRecordModal';
-import { getSampleRegistrations } from '../utils/dataGenerator';
+import { useLanguage } from '../contexts/LanguageContext';
 
 
 const GeneralChatbot: React.FC = () => {
@@ -15,10 +13,12 @@ const GeneralChatbot: React.FC = () => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     startGeneralChat();
-    setMessages([{ role: 'model', parts: [{ text: "Hello! I am पशुHelper. How can I assist you with cattle or buffalo breeds today?" }] }]);
+    setMessages([{ role: 'model', parts: [{ text: t('dashboard.chatbot.greeting') }] }]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -45,23 +45,23 @@ const GeneralChatbot: React.FC = () => {
     <>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-6 bg-secondary-600 text-white shadow-lg flex items-center justify-center hover:bg-secondary-700 transition-all duration-300 ease-in-out z-50
-          ${isOpen ? 'w-16 h-16 rounded-full' : 'w-auto h-14 px-6 rounded-full'}`}
-        aria-label={isOpen ? "Close AI Assistant" : "Open AI Assistant"}
+        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-secondary-600 text-white shadow-lg flex items-center justify-center hover:bg-secondary-700 transition-all duration-300 ease-in-out z-50
+          ${isOpen ? 'w-14 h-14 sm:w-16 sm:h-16 rounded-full' : 'w-auto h-12 sm:h-14 px-4 sm:px-6 rounded-full'}`}
+        aria-label={isOpen ? t('dashboard.chatbot.closeAssistant') : t('dashboard.chatbot.openAssistant')}
       >
         {isOpen ? (
-           <Icon name="close" className="w-8 h-8"/>
+           <Icon name="close" className="w-7 h-7 sm:w-8 sm:h-8"/>
         ) : (
           <div className="flex items-center gap-2">
-            <Icon name="chat-bubble" className="w-6 h-6"/>
-            <span className="font-semibold text-base whitespace-nowrap">AI Assistant</span>
+            <Icon name="chat-bubble" className="w-5 h-5 sm:w-6 sm:h-6"/>
+            <span className="font-semibold text-sm sm:text-base whitespace-nowrap">{t('dashboard.chatbot.aiAssistant')}</span>
           </div>
         )}
       </button>
 
-      <div className={`fixed bottom-24 right-6 w-full max-w-sm bg-cream-50 rounded-2xl shadow-2xl border border-cream-200 transition-all duration-300 ease-in-out z-40 origin-bottom-right ${isOpen ? 'transform scale-100 opacity-100' : 'transform scale-95 opacity-0 pointer-events-none'}`}>
+      <div className={`fixed bottom-20 right-4 sm:bottom-24 sm:right-6 w-[calc(100vw-2rem)] max-w-sm bg-cream-50 rounded-2xl shadow-2xl border border-cream-200 transition-all duration-300 ease-in-out z-40 origin-bottom-right ${isOpen ? 'transform scale-100 opacity-100' : 'transform scale-95 opacity-0 pointer-events-none'}`}>
         <div className="p-4 border-b border-secondary-300 bg-secondary-700 text-white rounded-t-2xl flex justify-between items-center">
-          <h3 className="font-bold text-lg flex items-center gap-2"><Icon name="ai-sparkles" className="w-6 h-6 text-white"/> AI Assistant: पशुHelper</h3>
+          <h3 className="font-bold text-lg flex items-center gap-2"><Icon name="ai-sparkles" className="w-6 h-6 text-white"/> {t('dashboard.chatbot.title')}</h3>
           <button onClick={() => setIsOpen(false)} className="text-gray-300 hover:text-white"><Icon name="close" className="w-5 h-5"/></button>
         </div>
         <div className="flex-grow p-4 h-96 overflow-y-auto space-y-4 bg-cream-100">
@@ -76,7 +76,7 @@ const GeneralChatbot: React.FC = () => {
           {isLoading && (
             <div className="flex items-end gap-2 justify-start">
                <div className="w-8 h-8 rounded-full bg-secondary-800 flex items-center justify-center text-white text-lg flex-shrink-0">🐮</div>
-              <div className="p-3 rounded-2xl bg-white text-gray-500 text-sm rounded-bl-none shadow-sm">Thinking...</div>
+              <div className="p-3 rounded-2xl bg-white text-gray-500 text-sm rounded-bl-none shadow-sm">{t('generic.thinking')}</div>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -87,7 +87,7 @@ const GeneralChatbot: React.FC = () => {
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Ask about breeds..."
+            placeholder={t('dashboard.chatbot.placeholder')}
             className="flex-grow p-2 border border-gray-300 rounded-l-md focus:ring-secondary-500 focus:border-secondary-500 bg-white text-gray-900"
             disabled={isLoading}
           />
@@ -106,6 +106,7 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
     const [selectedBreed, setSelectedBreed] = useState<BreedInfo | null>(null);
     const [isLoadingFacts, setIsLoadingFacts] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
+    const { t } = useLanguage();
     const defaultFactText = 'Detailed facts for this breed are being compiled and will be available soon.';
 
     const filteredBreeds = useMemo(() => {
@@ -157,7 +158,7 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
             <div ref={modalRef} tabIndex={-1} className="bg-cream-50 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-cream-200 flex justify-between items-center">
                     <h2 className="text-xl font-bold text-primary-900 flex items-center gap-2">
-                        <Icon name="book-open" className="w-6 h-6 text-accent-yellow-600"/> Breed Learning Hub
+                        <Icon name="book-open" className="w-6 h-6 text-accent-yellow-600"/> {t('dashboard.hub.title')}
                     </h2>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-cream-200">
                         <Icon name="close" className="w-6 h-6 text-gray-500"/>
@@ -168,7 +169,7 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
                         <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
                         <input
                             type="text"
-                            placeholder={`Search ${ALL_BREEDS.length} recognized breeds...`}
+                            placeholder={t('dashboard.hub.searchPlaceholder', { count: ALL_BREEDS.length })}
                             value={searchTerm}
                             onChange={e => { setSearchTerm(e.target.value); setSelectedBreed(null); }}
                             className="w-full p-2 pl-10 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-accent-yellow-500 focus:border-accent-yellow-500"
@@ -182,11 +183,11 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
                                <li key={breed.name}>
                                    <button onClick={() => handleSelectBreed(breed)} className={`w-full text-left p-3 hover:bg-cream-100 ${selectedBreed?.name === breed.name ? 'bg-accent-yellow-100' : ''}`}>
                                         <p className="font-semibold text-primary-800">{breed.name}</p>
-                                        <p className="text-sm text-primary-700">{breed.species}</p>
+                                        <p className="text-sm text-primary-700">{t(`species.${breed.species.toLowerCase()}`)}</p>
                                    </button>
                                </li>
                            )) : (
-                               <li className="p-4 text-center text-gray-500">No breeds found.</li>
+                               <li className="p-4 text-center text-gray-500">{t('dashboard.hub.noBreeds')}</li>
                            )}
                        </ul>
                     </div>
@@ -194,17 +195,17 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
                        {isLoadingFacts ? (
                             <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
                                 <Icon name="ai-sparkles" className="w-12 h-12 text-gray-400 animate-pulse mb-2"/>
-                                <p className="font-semibold">Fetching live data using Google Search...</p>
-                                <p className="text-sm">Please wait a moment.</p>
+                                <p className="font-semibold">{t('dashboard.hub.fetching')}</p>
+                                <p className="text-sm">{t('dashboard.hub.wait')}</p>
                             </div>
                         ) : selectedBreed ? (
                             <div>
                                 <h3 className="text-lg font-bold text-primary-900">{selectedBreed.name}</h3>
-                                <p className="text-sm font-semibold text-accent-yellow-600 mb-2">{selectedBreed.species}</p>
+                                <p className="text-sm font-semibold text-accent-yellow-600 mb-2">{t(`species.${selectedBreed.species.toLowerCase()}`)}</p>
                                 <p className="text-primary-800 whitespace-pre-wrap">{selectedBreed.facts}</p>
                                 {selectedBreed.sources && selectedBreed.sources.length > 0 && (
                                     <div className="mt-4 pt-4 border-t border-cream-200">
-                                        <h4 className="text-sm font-bold text-primary-800 mb-2">Sources:</h4>
+                                        <h4 className="text-sm font-bold text-primary-800 mb-2">{t('dashboard.hub.sources')}:</h4>
                                         <ul className="space-y-1 list-disc list-inside">
                                             {selectedBreed.sources.map((source, index) => (
                                                 <li key={index} className="text-sm text-secondary-700 hover:text-secondary-600 truncate">
@@ -220,7 +221,7 @@ const BreedLearningHubModal: React.FC<{ isOpen: boolean; onClose: () => void; }>
                         ) : (
                              <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
                                  <Icon name="book-open" className="w-12 h-12 text-gray-400 mb-2"/>
-                                 <p>Select a breed from the left to view its facts.</p>
+                                 <p>{t('dashboard.hub.selectBreed')}</p>
                              </div>
                         )}
                     </div>
@@ -286,6 +287,7 @@ const StatCard: React.FC<{title: string, value: string | number, icon: React.Rea
 
 const ActivityStatCard: React.FC<{period: string, count: number, iconName: 'calendar-days' | 'calendar-week' | 'calendar'}> = ({period, count, iconName}) => {
     const [displayCount, setDisplayCount] = useState(0);
+    const { t } = useLanguage();
 
     useEffect(() => {
         const endValue = count;
@@ -323,14 +325,15 @@ const ActivityStatCard: React.FC<{period: string, count: number, iconName: 'cale
             <div>
                 <p className="text-sm font-medium text-primary-700">{period}</p>
                 <p className="text-3xl font-bold text-primary-900 tabular-nums">{displayCount}</p>
-                <p className="text-xs text-primary-600 -mt-1">Registrations</p>
+                <p className="text-xs text-primary-600 -mt-1">{t('dashboard.regs')}</p>
             </div>
         </div>
     );
 };
 
 
-const QuickActionCard: React.FC<{ title: string; description: string; iconName: 'ai-sparkles' | 'history' | 'chart' | 'pencil-square'; onClick: () => void; accent: 'green' | 'teal' | 'yellow' | 'green-dark' }> = ({ title, description, iconName, onClick, accent }) => {
+const QuickActionCard: React.FC<{ title: string; description: string; iconName: 'ai-sparkles' | 'history' | 'chart' | 'pencil-square' | 'light-bulb'; onClick: () => void; accent: 'green' | 'teal' | 'yellow' | 'green-dark' }> = ({ title, description, iconName, onClick, accent }) => {
+    const { t } = useLanguage();
     const accents = {
         green: 'bg-accent-100 text-accent-700',
         teal: 'bg-secondary-100 text-secondary-700',
@@ -356,20 +359,21 @@ const QuickActionCard: React.FC<{ title: string; description: string; iconName: 
             <p className="text-primary-700 text-sm mt-1">{description}</p>
           </div>
            <div className={`mt-4 ${accentColors[accent]} font-bold flex items-center text-sm opacity-0 group-hover:opacity-100 transition-opacity`}>
-            Go <Icon name="chevron-right" className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
+            {t('dashboard.go')} <Icon name="chevron-right" className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
           </div>
         </button>
     );
 };
 
 const RegistrationCarouselItem: React.FC<{registration: Registration, onClick: () => void}> = ({registration, onClick}) => {
+    const { t } = useLanguage();
     const firstAnimal = registration.animals[0];
     const hasError = firstAnimal?.aiResult?.error;
-    const status = hasError ? 'Failed' : 'Approved';
+    const status = hasError ? t('status.failed') : t('status.approved');
     const statusColor = hasError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
 
     return (
-        <button onClick={onClick} className="flex-shrink-0 w-64 bg-white rounded-xl shadow-sm border border-cream-200 p-3 text-left hover:shadow-md transition-shadow active:scale-[0.98]">
+        <button onClick={onClick} className="flex-shrink-0 w-60 sm:w-64 bg-white rounded-xl shadow-sm border border-cream-200 p-3 text-left hover:shadow-md transition-shadow active:scale-[0.98]">
             <div className="w-full h-32 bg-cream-100 rounded-lg overflow-hidden mb-3 flex items-center justify-center">
                  {firstAnimal?.photos?.[0]?.previewUrl ? (
                     <img src={firstAnimal.photos[0].previewUrl} alt="Animal" className="w-full h-full object-cover"/>
@@ -377,7 +381,7 @@ const RegistrationCarouselItem: React.FC<{registration: Registration, onClick: (
                     <Icon name="cow" className="w-16 h-16 text-gray-400" />
                  )}
             </div>
-            <p className="font-bold text-primary-900 truncate">{firstAnimal?.aiResult?.breedName || 'Unknown Breed'}</p>
+            <p className="font-bold text-primary-900 truncate">{firstAnimal?.aiResult?.breedName || t('generic.unknownBreed')}</p>
             <p className="text-sm text-primary-700 truncate">{registration.owner.name}</p>
             <div className="flex justify-between items-center mt-2">
                 <p className="text-xs text-gray-500">{new Date(registration.timestamp).toLocaleDateString()}</p>
@@ -389,22 +393,15 @@ const RegistrationCarouselItem: React.FC<{registration: Registration, onClick: (
 
 
 export const Dashboard: React.FC<{
-  onNavigate: (view: 'REGISTRATION' | 'HISTORY' | 'ANALYTICS') => void;
+  registrations: Registration[];
+  onNavigate: (view: 'REGISTRATION' | 'HISTORY' | 'ANALYTICS' | 'QUICK_ID') => void;
   onViewRegistration: (registration: Registration) => void;
   onEditRegistration: (registration: Registration) => void;
-}> = ({ onNavigate, onViewRegistration, onEditRegistration }) => {
-  const [registrations, setRegistrations] = useLocalStorage<Registration[]>('registrations', []);
+}> = ({ registrations, onNavigate, onViewRegistration, onEditRegistration }) => {
   const [isLearningHubOpen, setIsLearningHubOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    const storedRegistrations = localStorage.getItem('registrations');
-    if (!storedRegistrations || JSON.parse(storedRegistrations).length === 0) {
-        setRegistrations(getSampleRegistrations());
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 100);
@@ -523,58 +520,67 @@ export const Dashboard: React.FC<{
   }, [registrations]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* Welcome Header */}
-       <div className="relative bg-gradient-to-br from-primary-900 to-primary-800 text-white p-8 rounded-2xl shadow-xl overflow-hidden">
+       <div className="relative bg-gradient-to-br from-primary-900 to-primary-800 text-white p-6 sm:p-8 rounded-2xl shadow-xl overflow-hidden">
         <div className="absolute -top-10 -right-10 text-primary-700 opacity-20">
             <span className="text-9xl">🐮</span>
         </div>
         <div className={`transition-all duration-700 ease-out ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight">
-            Welcome to <span className="text-accent-400">पशुVision</span>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
+            {language === 'hi' ? (
+              <>
+                <span className="text-accent-400">पशुVision</span>{t('dashboard.welcome')}
+              </>
+            ) : (
+              <>
+                {t('dashboard.welcome')} <span className="text-accent-400">पशुVision</span>
+              </>
+            )}
           </h1>
         </div>
         <div className={`transition-all duration-700 ease-out delay-200 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <p className="text-primary-200 mt-2 text-lg">
-            Your AI-powered assistant for accurate livestock management.
+          <p className="text-primary-200 mt-2 text-base sm:text-lg">
+            {t('dashboard.welcomeSub')}
           </p>
         </div>
         <div className={`transition-all duration-700 ease-out delay-300 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <p className="text-sm text-primary-300 mt-4 pt-4 border-t border-primary-700/50">
-            In association with the <strong>Ministry of Fisheries, Animal Husbandry & Dairying</strong>
+            {t('dashboard.ministry')}
           </p>
         </div>
       </div>
 
 
       {/* At-a-glance Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <StatCard title="Total Animals Registered" value={totalAnimals} icon={<Icon name="cow" className="w-6 h-6" />} />
-          <StatCard title="Total Registrations" value={registrations.length} icon={<Icon name="history" className="w-6 h-6" />} />
-          <StatCard title="Most Common Breed" value={mostCommonBreed} icon={<Icon name="ai-sparkles" className="w-6 h-6" />} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <StatCard title={t('dashboard.totalAnimals')} value={totalAnimals} icon={<Icon name="cow" className="w-6 h-6" />} />
+          <StatCard title={t('dashboard.totalRegs')} value={registrations.length} icon={<Icon name="history" className="w-6 h-6" />} />
+          <StatCard title={t('dashboard.commonBreed')} value={mostCommonBreed} icon={<Icon name="ai-sparkles" className="w-6 h-6" />} />
       </div>
 
       {/* Registration Activity */}
       <div>
-        <h3 className="text-xl font-bold text-primary-900 mb-4">Recent Activity</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <ActivityStatCard period="Today" count={activityStats.todayCount} iconName="calendar-days" />
-            <ActivityStatCard period="This Week" count={activityStats.weekCount} iconName="calendar-week" />
-            <ActivityStatCard period="This Month" count={activityStats.monthCount} iconName="calendar" />
+        <h3 className="text-xl font-bold text-primary-900 mb-4">{t('dashboard.recentActivity')}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <ActivityStatCard period={t('dashboard.today')} count={activityStats.todayCount} iconName="calendar-days" />
+            <ActivityStatCard period={t('dashboard.thisWeek')} count={activityStats.weekCount} iconName="calendar-week" />
+            <ActivityStatCard period={t('dashboard.thisMonth')} count={activityStats.monthCount} iconName="calendar" />
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <QuickActionCard title="New Registration" description="Start a new entry." iconName="ai-sparkles" accent="green" onClick={() => onNavigate('REGISTRATION')} />
-        <QuickActionCard title="Registration History" description="Review past reports." iconName="history" accent="green-dark" onClick={() => onNavigate('HISTORY')} />
-        <QuickActionCard title="Analytics" description="View breed trends." iconName="chart" accent="teal" onClick={() => onNavigate('ANALYTICS')} />
-        <QuickActionCard title="Update Record" description="Find & edit a registration." iconName="pencil-square" accent="yellow" onClick={() => setIsUpdateModalOpen(true)} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
+        <QuickActionCard title={t('dashboard.actions.newReg')} description={t('dashboard.actions.newRegDesc')} iconName="ai-sparkles" accent="green" onClick={() => onNavigate('REGISTRATION')} />
+        <QuickActionCard title={t('dashboard.actions.quickId')} description={t('dashboard.actions.quickIdDesc')} iconName="light-bulb" accent="teal" onClick={() => onNavigate('QUICK_ID')} />
+        <QuickActionCard title={t('dashboard.actions.update')} description={t('dashboard.actions.updateDesc')} iconName="pencil-square" accent="yellow" onClick={() => setIsUpdateModalOpen(true)} />
+        <QuickActionCard title={t('dashboard.actions.analytics')} description={t('dashboard.actions.analyticsDesc')} iconName="chart" accent="green-dark" onClick={() => onNavigate('ANALYTICS')} />
+        <QuickActionCard title={t('dashboard.actions.history')} description={t('dashboard.actions.historyDesc')} iconName="history" accent="green-dark" onClick={() => onNavigate('HISTORY')} />
       </div>
       
       {/* Recent Registrations Carousel */}
        <div>
-        <h3 className="text-xl font-bold text-primary-900 mb-4">Recent Registrations</h3>
+        <h3 className="text-xl font-bold text-primary-900 mb-4">{t('dashboard.recentRegs')}</h3>
          {recentUserRegistrations.length > 0 ? (
             <div className="flex space-x-4 overflow-x-auto pb-4 -mb-4">
               {recentUserRegistrations.map((reg) => (
@@ -583,7 +589,7 @@ export const Dashboard: React.FC<{
             </div>
          ) : (
             <div className="text-center py-10 bg-white rounded-xl border-2 border-dashed border-cream-200">
-                <p className="text-primary-700">No new registrations yet — Start one to see it appear here! 🐮</p>
+                <p className="text-primary-700">{t('dashboard.noNewRegs')}</p>
             </div>
          )}
       </div>
@@ -591,10 +597,10 @@ export const Dashboard: React.FC<{
       {/* Registration Database Table */}
       <div>
           <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-primary-900">Registration Database</h3>
+              <h3 className="text-xl font-bold text-primary-900">{t('dashboard.regDb')}</h3>
               <button onClick={handleExportCSV} disabled={registrations.length === 0} className="flex items-center gap-2 px-4 py-2 bg-primary-800 text-white rounded-md text-sm font-semibold hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors">
                   <Icon name="upload" className="w-4 h-4" />
-                  Export to CSV
+                  {t('dashboard.export')}
               </button>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-cream-200 overflow-hidden">
@@ -602,12 +608,12 @@ export const Dashboard: React.FC<{
                   <table className="w-full text-sm text-left text-primary-800">
                       <thead className="text-xs text-primary-700 uppercase bg-cream-100 sticky top-0 z-10">
                           <tr>
-                              <th scope="col" className="px-6 py-3">Date</th>
-                              <th scope="col" className="px-6 py-3">Owner Name</th>
-                              <th scope="col" className="px-6 py-3">Location</th>
-                              <th scope="col" className="px-6 py-3">Breeds Identified</th>
-                              <th scope="col" className="px-6 py-3">Status</th>
-                              <th scope="col" className="px-6 py-3 text-right">Actions</th>
+                              <th scope="col" className="px-6 py-3">{t('dashboard.table.date')}</th>
+                              <th scope="col" className="px-6 py-3">{t('dashboard.table.owner')}</th>
+                              <th scope="col" className="px-6 py-3">{t('dashboard.table.location')}</th>
+                              <th scope="col" className="px-6 py-3">{t('dashboard.table.breeds')}</th>
+                              <th scope="col" className="px-6 py-3">{t('dashboard.table.status')}</th>
+                              <th scope="col" className="px-6 py-3 text-right">{t('dashboard.table.actions')}</th>
                           </tr>
                       </thead>
                       <tbody>
@@ -616,13 +622,13 @@ export const Dashboard: React.FC<{
                               const totalCount = reg.animals.length;
                               let status, statusColor;
                               if (successCount === totalCount) {
-                                  status = 'Success';
+                                  status = t('status.success');
                                   statusColor = 'bg-green-100 text-green-800';
                               } else if (successCount > 0) {
-                                  status = 'Partial';
+                                  status = t('status.partial');
                                   statusColor = 'bg-yellow-100 text-yellow-800';
                               } else {
-                                  status = 'Failed';
+                                  status = t('status.failed');
                                   statusColor = 'bg-red-100 text-red-800';
                               }
 
@@ -641,7 +647,7 @@ export const Dashboard: React.FC<{
                                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColor}`}>{status}</span>
                                       </td>
                                       <td className="px-6 py-4 text-right">
-                                          <button onClick={() => onViewRegistration(reg)} className="font-medium text-accent-600 hover:underline">View</button>
+                                          <button onClick={() => onViewRegistration(reg)} className="font-medium text-accent-600 hover:underline">{t('buttons.view')}</button>
                                       </td>
                                   </tr>
                               );
@@ -650,7 +656,7 @@ export const Dashboard: React.FC<{
                   </table>
               </div>
                {registrations.length === 0 && (
-                  <div className="text-center p-8 text-primary-700">No registrations to display.</div>
+                  <div className="text-center p-8 text-primary-700">{t('dashboard.noRegs')}</div>
               )}
           </div>
       </div>
@@ -658,10 +664,10 @@ export const Dashboard: React.FC<{
       {/* Learning Hub */}
       <div className="grid grid-cols-1 gap-6">
           <button onClick={() => setIsLearningHubOpen(true)} className="bg-white p-6 rounded-xl shadow-sm border border-cream-200 text-left hover:shadow-lg transition-shadow hover:-translate-y-1">
-            <h3 className="font-bold text-primary-900 mb-2 flex items-center gap-2"><Icon name="book-open" className="w-5 h-5 text-accent-yellow-600"/>Breed Learning Hub</h3>
-            <p className="text-sm text-primary-700">Explore facts and information about all 74 officially recognized breeds of cattle and buffalo in India. Use the search to quickly find a specific breed.</p>
+            <h3 className="font-bold text-primary-900 mb-2 flex items-center gap-2"><Icon name="book-open" className="w-5 h-5 text-accent-yellow-600"/>{t('dashboard.hub.title')}</h3>
+            <p className="text-sm text-primary-700">{t('dashboard.hub.desc')}</p>
              <div className="mt-4 text-accent-yellow-600 font-bold flex items-center text-sm">
-                Open Hub <Icon name="chevron-right" className="w-4 h-4 ml-1" />
+                {t('dashboard.hub.open')} <Icon name="chevron-right" className="w-4 h-4 ml-1" />
             </div>
           </button>
       </div>
@@ -672,6 +678,7 @@ export const Dashboard: React.FC<{
         isOpen={isUpdateModalOpen} 
         onClose={() => setIsUpdateModalOpen(false)} 
         onEditRegistration={onEditRegistration}
+        registrations={registrations}
       />
     </div>
   );

@@ -1,12 +1,16 @@
 
 import React from 'react';
 
-type IconProps = {
+// FIX: Update IconProps to accept all standard SVG props, which includes 'title'.
+type IconProps = React.SVGProps<SVGSVGElement> & {
   name: 'camera' | 'upload' | 'trash' | 'check' | 'cow' | 'buffalo' | 'user' | 'location' | 'chevron-right' | 'chevron-left' | 'ai-sparkles' | 'history' | 'chart' | 'print' | 'qrcode' | 'refresh' | 'send' | 'chat-bubble' | 'close' | 'search' | 'bell' | 'user-circle' | 'book-open' | 'megaphone' | 'help-circle' | 'pencil-square' | 'syringe' | 'building-library' | 'light-bulb' | 'filter' | 'calendar' | 'calendar-days' | 'calendar-week';
-  className?: string;
+  // FIX: Explicitly add `title` to the component's props to fix type error.
+  title?: string;
 };
 
-export const Icon: React.FC<IconProps> = ({ name, className = 'w-6 h-6' }) => {
+// FIX: Pass through any additional props (...props) to the SVG element.
+// FIX: Explicitly handle the 'title' prop to resolve TS error and improve accessibility.
+export const Icon: React.FC<IconProps> = ({ name, className = 'w-6 h-6', title, ...props }) => {
   // FIX: Changed JSX.Element to React.ReactElement to resolve JSX namespace error.
   const icons: { [key: string]: React.ReactElement } = {
     camera: <><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" /></>,
@@ -15,7 +19,7 @@ export const Icon: React.FC<IconProps> = ({ name, className = 'w-6 h-6' }) => {
     check: <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />,
     cow: <path strokeLinecap="round" strokeLinejoin="round" d="M6 3.75v10.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 14.25V3.75M9 3.75h6" />,
     buffalo: <><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l7.5 7.5 7.5-7.5" /><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75V6a2.25 2.25 0 012.25-2.25h10.5A2.25 2.25 0 0121.75 6v6.75" /></>,
-    user: <><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></>,
+    user: <><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></>,
     location: <><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></>,
     'chevron-right': <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />,
     'chevron-left': <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />,
@@ -26,10 +30,10 @@ export const Icon: React.FC<IconProps> = ({ name, className = 'w-6 h-6' }) => {
     qrcode: <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.5v15h15v-15h-15zM12 9.75v4.5m-4.5-4.5v4.5m9-4.5v4.5M9.75 6H12v2.25H9.75V6zm-4.5 0H7.5v2.25H5.25V6zm9 0h2.25v2.25H14.25V6z" />,
     refresh: <><path strokeLinecap="round" strokeLinejoin="round" d="M3 2v6h6" /><path strokeLinecap="round" strokeLinejoin="round" d="M3 13a9 9 0 1 0 3-7.7L3 8" /></>,
     send: <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />,
-    'chat-bubble': <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 01-2.53-.401m-1.11-3.414A5.961 5.961 0 016.75 15.75c-3.05 0-5.5-2.5-5.5-5.5S3.7 4.75 6.75 4.75c2.32 0 4.34.84 5.25 2.05m8.53 1.45a.75.75 0 00-1.06-1.06l-1.5 1.5-1.5-1.5a.75.75 0 10-1.06 1.06l1.5 1.5-1.5 1.5a.75.75 0 101.06 1.06l1.5-1.5 1.5 1.5a.75.75 0 101.06-1.06l-1.5-1.5 1.5-1.5z" />,
+    'chat-bubble': <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />,
     close: <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />,
     search: <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />,
-    bell: <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.31 5.632l-1.42 1.42A9 9 0 009 22.5h6c1.502 0 2.91-.55 4.076-1.465l-2.12-2.12a1.5 1.5 0 01-1.076-.44zM12 22.5v-2.25" />,
+    bell: <><path strokeLinecap="round" strokeLinejoin="round" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path strokeLinecap="round" strokeLinejoin="round" d="M13.73 21a2 2 0 0 1-3.46 0" /></>,
     'user-circle': <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />,
     'book-open': <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />,
     megaphone: <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0" />,
@@ -45,7 +49,8 @@ export const Icon: React.FC<IconProps> = ({ name, className = 'w-6 h-6' }) => {
   };
   
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className} {...props}>
+      {title && <title>{title}</title>}
       {icons[name]}
     </svg>
   );

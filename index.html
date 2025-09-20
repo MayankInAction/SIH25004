@@ -100,6 +100,43 @@
   }
 }
 </script>
+<style>
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 1cm; /* Standard margin for printing */
+    }
+
+    body {
+      /* This is crucial for printing background colors and images in most browsers */
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* A helper class to hide elements during printing */
+    .no-print {
+      display: none !important;
+    }
+
+    /* Style the container of the printable element */
+    .print-container {
+      background-color: white !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    
+    /* Ensure the certificate itself takes up the full available space */
+    #certificate {
+      width: 100% !important;
+      max-width: 100% !important;
+      border: none !important;
+      box-shadow: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+    }
+  }
+</style>
 </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

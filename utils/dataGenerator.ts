@@ -1,5 +1,4 @@
-
-import { Registration } from '../types';
+import { Registration, OwnerData } from '../types';
 import { INDIAN_STATES_AND_DISTRICTS } from './locationData';
 import { CATTLE_BREEDS, BUFFALO_BREEDS } from '../constants';
 
@@ -18,6 +17,31 @@ const errorMessages = [
     'Animal is partially obstructed from view. A clear side profile is recommended.',
     'Could not confirm species. The animal does not appear to be Cattle or Buffalo.',
 ];
+
+export const generateRandomOwnerData = (): OwnerData => {
+    const ownerFirstName = getRandomElement(firstNames);
+    const ownerLastName = getRandomElement(lastNames);
+    const ownerState = getRandomElement(states);
+    const ownerDistrict = getRandomElement(INDIAN_STATES_AND_DISTRICTS[ownerState]);
+    
+    return {
+        name: `${ownerFirstName} ${ownerLastName}`,
+        mobile: `9${getRandomInt(100000000, 999999999)}`,
+        dob: `${getRandomInt(1960, 1995)}-${String(getRandomInt(1, 12)).padStart(2, '0')}-${String(getRandomInt(1, 28)).padStart(2, '0')}`,
+        gender: Math.random() > 0.4 ? 'Male' : 'Female',
+        address: `${getRandomInt(1, 100)} Main Road, Near Post Office`,
+        village: getRandomElement(villages),
+        district: ownerDistrict,
+        state: ownerState,
+        pincode: `${getRandomInt(100000, 999999)}`,
+        idType: 'Aadhaar',
+        idNumber: `${getRandomInt(1000, 9999)}${getRandomInt(1000, 9999)}${getRandomInt(1000, 9999)}`,
+        casteCategory: getRandomElement(['General', 'OBC', 'SC', 'ST']),
+        bankAccount: "", // Keep optional fields empty
+        ifscCode: "",
+    };
+};
+
 
 export const getSampleRegistrations = (): Registration[] => {
     const registrations: Registration[] = [];
@@ -75,14 +99,14 @@ export const getSampleRegistrations = (): Registration[] => {
                 aiResult: hasError ? {
                     error: getRandomElement(errorMessages),
                     breedName: 'Unknown',
-                    confidence: 'Low' as 'Low',
+                    confidence: 0,
                     milkYieldPotential: 'N/A',
                     careNotes: 'N/A',
                     reasoning: 'Could not identify key features due to analysis failure.',
                 } : {
                     error: null,
                     breedName: breedName,
-                    confidence: getRandomElement(['High', 'Medium']) as 'High' | 'Medium',
+                    confidence: getRandomInt(75, 98),
                     milkYieldPotential: 'Varies by individual animal; typically good for this breed.',
                     careNotes: 'Requires standard diet, clean water, and shelter. Consult a vet for specific needs.',
                     reasoning: 'Body conformation, coloration, and head shape are consistent with the identified breed.',
